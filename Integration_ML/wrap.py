@@ -42,20 +42,6 @@ def main():
         #    back to the start to listen again
 
 
-    
-def main():
-    filename = function_calls.record_audio()
-    if filename:
-        engine = function_calls.AudioInferenceEngine()
-        result_string = engine.process_file(filename)
-        degrees = None
-        distance = None
-        dist = re.search(r"Distance: (\d+\.?\d*) ft", result_string)
-        distance = float(dist.group(1))
-        deg = re.search(r"Source \d+: (\d+\.?\d*)°", result_string)
-        degrees = float(deg.group(1))
-        coordinates = (distance, degrees)
-
 
 if __name__ == "__main__":
     main()
