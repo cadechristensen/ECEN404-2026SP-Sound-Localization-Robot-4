@@ -15,7 +15,7 @@ import wave
 warnings.filterwarnings("ignore")
 os.environ["PYTHONWARNINGS"] = "ignore"
 
-class AudioInferenceEngine:
+class Infer:
     def __init__(self, task_id='6', models_dir='models'):
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.params = doanet_parameters.get_params(task_id)
@@ -23,7 +23,7 @@ class AudioInferenceEngine:
             'nb_cnn2d_filt': 128, 'rnn_size': 256, 
             'self_attn': True, 'unique_classes': 2
         })
-        nb_ch = 10 if self.params['dataset'] == 'mic' else 7
+        nb_ch = 10 
         self.seld_ch = nb_ch 
         
         data_in = (self.params['batch_size'], nb_ch, self.params['feature_sequence_length'], self.params['nb_mel_bins'])
@@ -36,8 +36,7 @@ class AudioInferenceEngine:
         if os.path.exists(seld_ckpt):
             self.model_seld.load_state_dict(torch.load(seld_ckpt, map_location=self.device))
         else:
-            sys.exit(f"Error: SELD Model {seld_ckpt} not found")
-
+            sys.exit(f"Error: Model {seld_ckpt} not found")
         feat_cls = cls_feature_class.FeatureClass(self.params)
         wts_file = feat_cls.get_normalized_wts_file()
         if not os.path.exists(wts_file):
@@ -58,7 +57,6 @@ class AudioInferenceEngine:
         rms = librosa.feature.rms(y=y, frame_length=frame_length, hop_length=hop_length)
         spec_cent = librosa.feature.spectral_centroid(y=y, sr=sr, n_fft=frame_length, hop_length=hop_length)
         mfccs = librosa.feature.mfcc(y=y, sr=sr, n_mfcc=13, n_fft=frame_length, hop_length=hop_length)
-        
         mfccs_mean = np.mean(mfccs, axis=1)
         mfccs_std = np.std(mfccs, axis=1)
 
@@ -90,8 +88,7 @@ class AudioInferenceEngine:
             feat_seq_len = self.params['feature_sequence_length']
             nb_feat_frames = features_SELD.shape[0]
             batch_size_feat = int(np.ceil(nb_feat_frames / float(feat_seq_len)))
-            feat_pad_len = batch_size_feat * feat_seq_len - nb_feat_frames
-            
+            feat_pad_len = batch_size_feat * feat_seq_len - nb_feat_frames         
             if feat_pad_len > 0:
                 features_SELD = np.pad(features_SELD, ((0, feat_pad_len), (0, 0)), 'constant', constant_values=1e-6)
             
