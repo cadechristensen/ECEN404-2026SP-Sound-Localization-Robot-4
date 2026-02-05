@@ -1,3 +1,4 @@
+"This will be programmed on Raspberry Pi to communicate to ESP32 through UART"
 import serial
 import time
 
