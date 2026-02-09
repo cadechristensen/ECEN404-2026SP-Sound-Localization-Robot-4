@@ -1,0 +1,140 @@
+MISCLASSIFIED FILES SUMMARY - VAL SET
+============================================================
+
+Total misclassifications: 27
+
+File: data\hard_negatives\mouse_click\1-81851-A-31.wav
+  True Label: non_cry
+  Predicted: cry (76.4% confidence)
+  Probabilities: non_cry=0.236, cry=0.764
+----------------------------------------
+File: data\cry_baby\cry_ICSD\strong_Infantcry_262_2932_4648.wav
+  True Label: cry
+  Predicted: non_cry (78.3% confidence)
+  Probabilities: non_cry=0.783, cry=0.217
+----------------------------------------
+File: data\hard_negatives\child_tantrum\525088_BaoLucGiaĐinh1.mp3
+  True Label: non_cry
+  Predicted: cry (98.6% confidence)
+  Probabilities: non_cry=0.014, cry=0.986
+----------------------------------------
+File: data\hard_negatives\pouring_water\5-205589-A-17.wav
+  True Label: non_cry
+  Predicted: cry (81.2% confidence)
+  Probabilities: non_cry=0.188, cry=0.812
+----------------------------------------
+File: data\hard_negatives\adult_scream\222538_WOMANSCREAM.mp3
+  True Label: non_cry
+  Predicted: cry (96.4% confidence)
+  Probabilities: non_cry=0.036, cry=0.964
+----------------------------------------
+File: data\hard_negatives\pouring_water\1-67152-A-17.wav
+  True Label: non_cry
+  Predicted: cry (95.5% confidence)
+  Probabilities: non_cry=0.045, cry=0.955
+----------------------------------------
+File: data\hard_negatives\relabeled\relabeled_from_cry_weak_Infantcry_469.wav
+  True Label: non_cry
+  Predicted: cry (93.8% confidence)
+  Probabilities: non_cry=0.062, cry=0.938
+----------------------------------------
+File: data\hard_negatives\laughing\1-30043-A-26.wav
+  True Label: non_cry
+  Predicted: cry (93.8% confidence)
+  Probabilities: non_cry=0.062, cry=0.938
+----------------------------------------
+File: data\hard_negatives\relabeled\relabeled_from_cry_strong_Infantcry_244.wav
+  True Label: non_cry
+  Predicted: cry (91.7% confidence)
+  Probabilities: non_cry=0.083, cry=0.917
+----------------------------------------
+File: data\hard_negatives\cat\3-146964-A-5.wav
+  True Label: non_cry
+  Predicted: cry (55.5% confidence)
+  Probabilities: non_cry=0.445, cry=0.555
+----------------------------------------
+File: data\hard_negatives\baby_noncry\freesound_113249_sequencewav.ogg
+  True Label: non_cry
+  Predicted: cry (56.3% confidence)
+  Probabilities: non_cry=0.437, cry=0.563
+----------------------------------------
+File: data\hard_negatives\laughing\4-164243-A-26.wav
+  True Label: non_cry
+  Predicted: cry (99.8% confidence)
+  Probabilities: non_cry=0.002, cry=0.998
+----------------------------------------
+File: data\hard_negatives\breathing\3-112557-B-23.wav
+  True Label: non_cry
+  Predicted: cry (81.4% confidence)
+  Probabilities: non_cry=0.186, cry=0.814
+----------------------------------------
+File: data\hard_negatives\crow\4-136381-A-9.wav
+  True Label: non_cry
+  Predicted: cry (78.2% confidence)
+  Probabilities: non_cry=0.218, cry=0.782
+----------------------------------------
+File: data\hard_negatives\door_wood_creaks\4-107120-A-33.wav
+  True Label: non_cry
+  Predicted: cry (85.0% confidence)
+  Probabilities: non_cry=0.150, cry=0.850
+----------------------------------------
+File: data\hard_negatives\sheep\4-250864-A-8.wav
+  True Label: non_cry
+  Predicted: cry (90.1% confidence)
+  Probabilities: non_cry=0.099, cry=0.901
+----------------------------------------
+File: data\hard_negatives\cow\2-103427-A-3.wav
+  True Label: non_cry
+  Predicted: cry (53.2% confidence)
+  Probabilities: non_cry=0.468, cry=0.532
+----------------------------------------
+File: data\hard_negatives\baby_noncry\freesound_405443_baby talk 001 171021_1231wav.ogg
+  True Label: non_cry
+  Predicted: cry (97.8% confidence)
+  Probabilities: non_cry=0.022, cry=0.978
+----------------------------------------
+File: data\hard_negatives\clapping\2-25293-A-22.wav
+  True Label: non_cry
+  Predicted: cry (88.2% confidence)
+  Probabilities: non_cry=0.118, cry=0.882
+----------------------------------------
+File: data\hard_negatives\laughing\4-167571-A-26.wav
+  True Label: non_cry
+  Predicted: cry (99.8% confidence)
+  Probabilities: non_cry=0.002, cry=0.998
+----------------------------------------
+File: data\hard_negatives\baby_noncry\freesound_625686_Baby Toddler Laugh Giggle.ogg
+  True Label: non_cry
+  Predicted: cry (99.0% confidence)
+  Probabilities: non_cry=0.010, cry=0.990
+----------------------------------------
+File: data\cry_baby\cry_crycaleb\anonymous178_D_005.wav
+  True Label: cry
+  Predicted: non_cry (95.1% confidence)
+  Probabilities: non_cry=0.951, cry=0.049
+----------------------------------------
+File: data\cry_baby\cry_ICSD\strong_Infantcry_184_1160_4555.wav
+  True Label: cry
+  Predicted: non_cry (98.7% confidence)
+  Probabilities: non_cry=0.987, cry=0.013
+----------------------------------------
+File: data\cry_baby\cry\5-198411-C.ogg
+  True Label: cry
+  Predicted: non_cry (91.5% confidence)
+  Probabilities: non_cry=0.915, cry=0.085
+----------------------------------------
+File: data\cry_baby\cry\2-50665-A.ogg
+  True Label: cry
+  Predicted: non_cry (98.5% confidence)
+  Probabilities: non_cry=0.985, cry=0.015
+----------------------------------------
+File: data\hard_negatives\vacuum_cleaner\3-159347-A-36.wav
+  True Label: non_cry
+  Predicted: cry (77.4% confidence)
+  Probabilities: non_cry=0.226, cry=0.774
+----------------------------------------
+File: data\hard_negatives\hen\5-248341-B-6.wav
+  True Label: non_cry
+  Predicted: cry (51.7% confidence)
+  Probabilities: non_cry=0.483, cry=0.517
+----------------------------------------

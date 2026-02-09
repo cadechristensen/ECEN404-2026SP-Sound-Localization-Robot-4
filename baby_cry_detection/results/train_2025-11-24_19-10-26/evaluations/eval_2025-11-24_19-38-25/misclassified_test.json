@@ -1,0 +1,252 @@
+[
+  {
+    "filename": "data\\cry_baby\\cry_ICSD\\strong_Infantcry_21_0000_0647.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 82.08480834960938,
+    "probabilities": [
+      0.8208480477333069,
+      0.17915195226669312
+    ]
+  },
+  {
+    "filename": "data\\hard_negatives\\baby_noncry\\freesound_121103_Baby gigglingwav.ogg",
+    "true_label": "non_cry",
+    "predicted_label": "cry",
+    "confidence": 97.83881378173828,
+    "probabilities": [
+      0.021611852571368217,
+      0.9783881306648254
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_ICSD\\strong_Infantcry_392_0008_9795.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 99.28782653808594,
+    "probabilities": [
+      0.992878258228302,
+      0.007121766451746225
+    ]
+  },
+  {
+    "filename": "data\\hard_negatives\\car_horn\\4-178402-A-43.wav",
+    "true_label": "non_cry",
+    "predicted_label": "cry",
+    "confidence": 94.08159637451172,
+    "probabilities": [
+      0.05918402597308159,
+      0.9408159852027893
+    ]
+  },
+  {
+    "filename": "data\\hard_negatives\\baby_noncry\\freesound_416684_Baby Language - Choo-Choowav.ogg",
+    "true_label": "non_cry",
+    "predicted_label": "cry",
+    "confidence": 74.27951049804688,
+    "probabilities": [
+      0.25720494985580444,
+      0.7427951097488403
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_ICSD\\strong_Infantcry_79_4964_6514.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 64.18153381347656,
+    "probabilities": [
+      0.6418153643608093,
+      0.3581846058368683
+    ]
+  },
+  {
+    "filename": "data\\hard_negatives\\baby_noncry\\freesound_521782_Baby Sneeze.ogg",
+    "true_label": "non_cry",
+    "predicted_label": "cry",
+    "confidence": 61.10069274902344,
+    "probabilities": [
+      0.3889930844306946,
+      0.6110069155693054
+    ]
+  },
+  {
+    "filename": "data\\hard_negatives\\breathing\\2-84965-A-23.wav",
+    "true_label": "non_cry",
+    "predicted_label": "cry",
+    "confidence": 78.15624237060547,
+    "probabilities": [
+      0.2184375673532486,
+      0.7815624475479126
+    ]
+  },
+  {
+    "filename": "data\\hard_negatives\\baby_noncry\\freesound_139045_Babbling - Nommmm.ogg",
+    "true_label": "non_cry",
+    "predicted_label": "cry",
+    "confidence": 99.85343170166016,
+    "probabilities": [
+      0.0014656165149062872,
+      0.9985343217849731
+    ]
+  },
+  {
+    "filename": "data\\hard_negatives\\baby_noncry\\freesound_412202_baby talk 007 171021_1231wav.ogg",
+    "true_label": "non_cry",
+    "predicted_label": "cry",
+    "confidence": 91.99037170410156,
+    "probabilities": [
+      0.08009622246026993,
+      0.9199037551879883
+    ]
+  },
+  {
+    "filename": "data\\hard_negatives\\baby_noncry\\freesound_386607_baby short laughwav.ogg",
+    "true_label": "non_cry",
+    "predicted_label": "cry",
+    "confidence": 86.10001373291016,
+    "probabilities": [
+      0.1389998346567154,
+      0.861000120639801
+    ]
+  },
+  {
+    "filename": "data\\hard_negatives\\car_horn\\5-179860-A-43.wav",
+    "true_label": "non_cry",
+    "predicted_label": "cry",
+    "confidence": 92.92124938964844,
+    "probabilities": [
+      0.07078749686479568,
+      0.9292125105857849
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_ICSD\\strong_Infantcry_194_4447_8673.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 99.4111328125,
+    "probabilities": [
+      0.9941113591194153,
+      0.005888583138585091
+    ]
+  },
+  {
+    "filename": "data\\hard_negatives\\frog\\4-130584-A-4.wav",
+    "true_label": "non_cry",
+    "predicted_label": "cry",
+    "confidence": 99.86634063720703,
+    "probabilities": [
+      0.0013366129714995623,
+      0.9986634254455566
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_ICSD\\strong_Infantcry_379_0992_3331.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 86.1633529663086,
+    "probabilities": [
+      0.8616335391998291,
+      0.1383664906024933
+    ]
+  },
+  {
+    "filename": "data\\hard_negatives\\baby_noncry\\freesound_416664_Baby Gibberish 1wav.ogg",
+    "true_label": "non_cry",
+    "predicted_label": "cry",
+    "confidence": 97.25904846191406,
+    "probabilities": [
+      0.02740958333015442,
+      0.972590446472168
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_ICSD\\strong_Infantcry_157.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 99.36913299560547,
+    "probabilities": [
+      0.9936913251876831,
+      0.006308628246188164
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_ICSD\\strong_Infantcry_165_4705_9990.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 74.73591613769531,
+    "probabilities": [
+      0.7473591566085815,
+      0.25264087319374084
+    ]
+  },
+  {
+    "filename": "data\\hard_negatives\\baby_noncry\\freesound_416639_Baby Gibberish 4wav.ogg",
+    "true_label": "non_cry",
+    "predicted_label": "cry",
+    "confidence": 83.41656494140625,
+    "probabilities": [
+      0.1658344268798828,
+      0.834165632724762
+    ]
+  },
+  {
+    "filename": "data\\hard_negatives\\rooster\\1-34119-A-1.wav",
+    "true_label": "non_cry",
+    "predicted_label": "cry",
+    "confidence": 96.494384765625,
+    "probabilities": [
+      0.03505617380142212,
+      0.9649438261985779
+    ]
+  },
+  {
+    "filename": "data\\hard_negatives\\door_wood_creaks\\1-51805-A-33.wav",
+    "true_label": "non_cry",
+    "predicted_label": "cry",
+    "confidence": 76.30091857910156,
+    "probabilities": [
+      0.2369907647371292,
+      0.7630091905593872
+    ]
+  },
+  {
+    "filename": "data\\hard_negatives\\adult_scream\\724794_RobotWomanScreamingSoundEf.mp3",
+    "true_label": "non_cry",
+    "predicted_label": "cry",
+    "confidence": 77.26235961914062,
+    "probabilities": [
+      0.22737637162208557,
+      0.772623598575592
+    ]
+  },
+  {
+    "filename": "data\\hard_negatives\\relabeled\\relabeled_from_cry_weak_Infantcry_999.wav",
+    "true_label": "non_cry",
+    "predicted_label": "cry",
+    "confidence": 93.16154479980469,
+    "probabilities": [
+      0.06838459521532059,
+      0.93161541223526
+    ]
+  },
+  {
+    "filename": "data\\hard_negatives\\cat\\3-146965-A-5.wav",
+    "true_label": "non_cry",
+    "predicted_label": "cry",
+    "confidence": 55.82215118408203,
+    "probabilities": [
+      0.4417784810066223,
+      0.5582215189933777
+    ]
+  },
+  {
+    "filename": "data\\hard_negatives\\rooster\\3-107219-A-1.wav",
+    "true_label": "non_cry",
+    "predicted_label": "cry",
+    "confidence": 98.0641098022461,
+    "probabilities": [
+      0.01935889571905136,
+      0.9806411266326904
+    ]
+  }
+]

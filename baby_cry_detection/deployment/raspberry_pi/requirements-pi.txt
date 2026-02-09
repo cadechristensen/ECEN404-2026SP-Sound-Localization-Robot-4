@@ -1,0 +1,69 @@
+# Raspberry Pi 5 Deployment Requirements
+# Lightweight package list for running baby cry detection on Pi
+# Excludes heavy development tools (jupyter, wandb, tensorboard, etc.)
+
+# Core machine learning and deep learning libraries
+# Note: Install PyTorch separately using:
+# pip3 install torch torchaudio --index-url https://download.pytorch.org/whl/cpu
+torch>=2.0.0
+torchaudio>=2.0.0
+
+# Audio processing libraries (essential for cry detection)
+librosa>=0.10.0
+soundfile>=0.12.0
+
+# Scientific computing and data manipulation
+numpy>=1.24.0
+scipy>=1.10.0
+
+# Machine learning utilities (for inference)
+scikit-learn>=1.3.0
+
+# Real-time audio capture (Pi-specific)
+pyaudio>=0.2.11
+
+# Progress bars and utilities
+tqdm>=4.65.0
+
+# System monitoring (optional but useful)
+psutil>=5.9.0
+
+# Configuration management
+pyyaml>=6.0.0
+
+# Logging utilities
+colorlog>=6.7.0
+
+# GPIO control for Raspberry Pi (if needed for robot integration)
+# Uncomment if using GPIO pins:
+# RPi.GPIO>=0.7.1
+# gpiozero>=1.6.2
+
+# IMPORTANT NOTES:
+# ================
+# 1. Install PyTorch FIRST before running this file:
+#    pip3 install torch torchaudio --index-url https://download.pytorch.org/whl/cpu
+#
+# 2. System dependencies needed (install before pip packages):
+#    sudo apt-get install -y portaudio19-dev python3-pyaudio
+#    sudo apt-get install -y alsa-utils pulseaudio
+#    sudo apt-get install -y libsndfile1 ffmpeg
+#    sudo apt-get install -y libopenblas-dev liblapack-dev
+#
+# 3. Create virtual environment (recommended):
+#    python3 -m venv ~/baby_monitor/venv
+#    source ~/baby_monitor/venv/bin/activate
+#
+# 4. Install this requirements file:
+#    pip3 install -r requirements-pi.txt
+#
+# 5. Excluded from deployment (not needed on Pi):
+#    - pandas (data analysis)
+#    - matplotlib, seaborn (visualization)
+#    - jupyter, ipywidgets (notebooks)
+#    - tensorboard, wandb (experiment tracking)
+#    - pytest, black, flake8 (development tools)
+#    - onnx, onnxruntime (model conversion)
+#    - memory-profiler (profiling)
+#    - torchvision (not needed for audio)
+#    - pydub, ffmpeg-python (handled by system ffmpeg)
