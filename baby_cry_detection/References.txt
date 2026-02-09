@@ -1,0 +1,33 @@
+I only want to use these references in the Subsystem Report Guide
+
+
+-I read this research paper and got inspiration from their techniques (Specifically for Bootstrap)
+H. Mpia, M. Muyisa, K. Grâce, K. Pascal, D.-D. Kambale, and O. Muzembe, “Lightweight deep learning system for infant-cry recognition with real-time notification in resource-constrained environments,” Machine Learning with Applications, vol. 22, p. 100791, 2025. doi: 10.1016/j.mlwa.2025.100791.
+
+-I read this research paper and got inspiration from their techniques
+T. Liu, X. Chen, W. Niu, J. Ma, and Y. Xu, "Infant cry detection in real-world domestic environment using a multi-feature fusion network," PLoS One, vol. 17, no. 10, Oct. 2022. [Online]. Available: https://www.ncbi.nlm.nih.gov/pmc/articles/PMC9609294/
+
+-I read this research paper and got inspiration from their techniques
+T. Maghfira, T. Basaruddin, and A. Krisnadhi, “Infant cry classification using CNN–RNN,” Journal of Physics: Conference Series, vol. 1528, p. 012019, 2020, doi: 10.1088/1742-6596/1528/1/012019.
+
+-This was used for my dataset
+Q. Liu, L. Song, D. Xu, and Y. Long, “ICSD: An open-source dataset for infant cry and snoring detection,” arXiv:2408.10561, 2024. [Online]. Available: https://arxiv.org/abs/2408.10561
+
+-This was used for my dataset
+D. Budaghyan, C. C. Onu, A. Gorin, C. Subakan, and D. Precup, “CryCeleb: A speaker verification dataset based on infant cry sounds,” arXiv:2305.00969, 2023. [Online]. Available: https://arxiv.org/abs/2305.00969
+
+-This was used for my dataset
+G. Veres, "Donate-a-Cry corpus," GitHub repository. [Online]. Available: https://github.com/gveres/donateacry-corpus
+
+-This was used for my dataset
+Mahmudulhasan01, "Baby crying sound dataset," Hugging Face Datasets. [Online]. Available: https://huggingface.co/datasets/mahmudulhasan01/baby_crying_sound
+
+-This was used for my dataset
+Mennaahmed23, "Baby cry sense dataset," Kaggle. [Online]. Available: https://www.kaggle.com/datasets/mennaahmed23/baby-cry-sense-dataset
+
+-This was used for my dataset
+Freesound Community, "Freesound.org - Collaborative database of creative-commons licensed sound," [Online]. Available: https://freesound.org/
+
+-This was used for my dataset
+J. F. Gemmeke et al., “Audio Set: An ontology and human-labeled dataset for audio events,” 2017 IEEE International Conference on Acoustics, Speech and Signal Processing (ICASSP), New Orleans, LA, USA, 2017, pp. 776–780, doi: 10.1109/ICASSP.2017.7952261.
+
