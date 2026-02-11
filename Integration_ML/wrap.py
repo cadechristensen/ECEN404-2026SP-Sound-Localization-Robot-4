@@ -1,10 +1,12 @@
+"""
+This module integrates the baby cry detection, sound localization, and robot control into a cohesive system. It listens for baby cries, processes the audio to determine direction and distance, and sends navigation commands to the ESP32-controlled robot. The system is designed to operate in a low-power mode until a cry is detected, at which point it wakes up to perform more intensive processing and control tasks.
+"""
 import function_calls
+import function_calls2
 import re
 import serial
 import time
-import argparse
 import logging
-import function_calls2
 from math import cos
 from math import sin
 from math import radians
@@ -16,101 +18,42 @@ ser = serial.Serial(
 )
 
 def look_for_sound():
-    """Main integrated baby monitor - low-power autonomous mode."""
-    parser = argparse.ArgumentParser(description='Integrated Baby Monitor System')
-    parser.add_argument('--model', type=str, required=True,
-                       help='Path to trained baby cry detection model')
-    parser.add_argument('--device-index', type=int, default=None,
-                       help='Audio device index for microphone')
-    parser.add_argument('--channels', type=int, default=4,
-                       help='Number of microphone channels (default: 4)')
-    parser.add_argument('--no-uart', action='store_true',
-                       help='Disable UART communication (for testing)')
-    parser.add_argument('--no-email', action='store_true',
-                       help='Disable email notifications (for testing)')
-    parser.add_argument('--debug', action='store_true',
-                       help='Enable debug logging')
+    """
+    Record audio from the mic array, run baby cry detection with noise
+    filtering, and return (detected: bool, filtered_file_path: str).
 
-    args = parser.parse_args()
+    Low-power mode: a cheap detect_cry() call runs first (no TTA).
+    The expensive confirm_and_filter() (with TTA) only fires when the
+    quick screen detects a potential cry.
+    """
+    # Record and resample (48 kHz -> 16 kHz)
+    audio_48k, audio_16k = function_calls2.record_and_resample()
+    if audio_16k is None:
+        logging.warning("Recording failed")
+        return (False, "")
 
-    # Setup logging
-    log_level = logging.DEBUG if args.debug else logging.INFO
-    logging.basicConfig(
-        level=log_level,
-        format='%(asctime)s - %(levelname)s - %(message)s'
-    )
+    # Low-power quick screening - no TTA
+    is_cry, confidence = function_calls2.detect_cry(audio_16k)
+    logging.info(f"Quick screen: is_cry={is_cry}, confidence={confidence:.2%}")
+    if not is_cry:
+        return (False, "")
 
-    print("\n" + "=" * 70)
-    print("AUTONOMOUS BABY MONITOR ROBOT")
-    print("=" * 70)
-    print("\nSystem Architecture:")
-    print("  [LOW-POWER MODE] -> Quick 1-sec detection")
-    print("       |")
-    print("       v (3 consecutive positives)")
-    print("  [WAKE UP] -> Capture 3s context + TTA confirmation")
-    print("       |")
-    print("       v (>85% confidence)")
-    print("  [ACTIVE MODE]")
-    print("    1. Record 5s for localization (48kHz)")
-    print("    2. Run DOAnet (direction + distance)")
-    print("    3. Send email notification")
-    print("    4. Navigate robot via ESP32")
-    print("       |")
-    print("       v")
-    print("  [RETURN TO LOW-POWER MODE]")
-    print("\n" + "=" * 70)
+    # Confirm with TTA + isolate cry segments
+    result = function_calls2.confirm_and_filter(audio_16k)
+    logging.info(f"Confirmation: is_cry={result.is_cry}, confidence={result.confidence:.2%}")
+    if not result.is_cry or result.confidence < 0.85:
+        return (False, "")
 
-    # Initialize UART
-    if not args.no_uart:
-        if not function_calls2.init_uart():
-            logging.warning("UART init failed, running without robot control")
-    else:
-        logging.info("UART disabled (test mode)")
+    # Save filtered audio at 48 kHz for DOAnet localization
+    filtered_path = function_calls2.save_filtered_audio(result.filtered_audio)
+    if filtered_path is None:
+        # Fallback: save original 48 kHz recording
+        filtered_path = "filtered_cry.wav"
+        import soundfile as sf
+        sf.write(filtered_path, audio_48k, function_calls2.MIC_SAMPLE_RATE)
 
-    # Create monitor (will set callback after handler is created)
-    monitor = function_calls2.LowPowerBabyMonitor(
-        model_path=args.model,
-        device_index=args.device_index,
-        num_channels=args.channels,
-        on_cry_confirmed=None  # Set below
-    )
-
-    # Create response handler
-    handler = function_calls2.CryResponseHandler(
-        monitor=monitor,
-        enable_email=not args.no_email
-    )
-
-    # Connect callback
-    monitor.on_cry_confirmed = handler.handle_cry_detected
-
-    # Clear UART buffer
-    if ser is not None:
-        time.sleep(1)
-        ser.reset_input_buffer()
-
-    print(f"\nConfiguration:")
-    print(f"  Model: {args.model}")
-    print(f"  Channels: {args.channels}")
-    print(f"  UART: {'Enabled' if ser is not None else 'Disabled'}")
-    print(f"  Email: {'Enabled' if not args.no_email else 'Disabled'}")
-    print(f"\nEntering LOW-POWER listening mode...")
-    print("Press Ctrl+C to stop\n")
-
-    try:
-        # Run low-power listening loop
-        monitor.run_low_power_loop()
-
-    except KeyboardInterrupt:
-        print("\n\nShutting down...")
-        monitor.stop()
-
-    finally:
-        if ser is not None:
-            ser.close()
-        print("System stopped.")
-    time.sleep(0.1)
-    return
+    logging.info(f"Filtered baby cry saved to {filtered_path}")
+    return (True, filtered_path)
 
 def process_sound_file(sound_file):
     engine = function_calls.Infer()
@@ -156,6 +99,8 @@ def sendtouser():
     pass
 
 
+
+
 def main():
     print("Listening for baby crying...")
     time.sleep(1)
@@ -182,10 +127,10 @@ def main():
             sendtouser()
             break
         else:
+            time.sleep(0.1)
             continue
 
 
-        time.sleep(0.5)
 
         #    back to the start to listen again
 
