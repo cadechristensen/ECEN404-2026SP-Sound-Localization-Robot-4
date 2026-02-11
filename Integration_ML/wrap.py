@@ -126,8 +126,8 @@ def process_sound_file(sound_file):
 
 def drive_robot(coordinates):
     # placeholder for robot algortihm that will navigate and then send back to start
+    ans=False
     x, y, distance = coordinates
-    
     cmd = f"NAV x={x:.3f} y={y:.3f} d={distance:.3f}\n"
     print(f"Sending → ESP32: {cmd.strip()}")
 
@@ -135,9 +135,25 @@ def drive_robot(coordinates):
     time.sleep(0.3)
     '''Obstacle avoidance algorithm is now running on ESP32
     until obstacle is avoided to relisten'''
+    while True:
+        msg = ser.readline().decode().strip()
+        if not msg:
+            continue
+                
+        print("RX:", msg)
+            
+        if msg == "RELISTEN":
+            print("Obstacle avoided. Relistening...")
+            ans=False
+            break
+        elif msg == "READY":
+            ans=True
+            print("ESP32 ready")
     #Main loop handles relistening/obstacle communication
-    return
+    return ans
 
+def sendtouser():
+    pass
 
 
 def main():
@@ -160,24 +176,15 @@ def main():
             print("Invalid sound data")
             continue
             
-        drive_robot(xyz)    
+        decision=drive_robot(xyz)    
         #Wait for ESP32 to finish navigating
-        print("Waiting for EP32...")
-        
-        while True:
-            msg = ser.readline().decode().strip()
-            if not msg:
-                continue
-                
-            print("RX:", msg)
-            
-            if msg == "RELISTEN":
-                print("Obstacle avoided. Relistening...")
-                break
-            elif msg == "OBSTACLE":
-                print("ESP32 hit obstacle. Navigating around...")   
-            elif msg == "READY":
-                print("ESP32 ready")
+        if decision==True:
+            sendtouser()
+            break
+        else:
+            continue
+
+
         time.sleep(0.5)
 
         #    back to the start to listen again
