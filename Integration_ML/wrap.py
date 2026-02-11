@@ -87,6 +87,100 @@ def main():
 
         #    back to the start to listen again
 
+#! Additions to the main loop:
+    """Main integrated baby monitor - low-power autonomous mode."""
+    parser = argparse.ArgumentParser(description='Integrated Baby Monitor System')
+    parser.add_argument('--model', type=str, required=True,
+                       help='Path to trained baby cry detection model')
+    parser.add_argument('--device-index', type=int, default=None,
+                       help='Audio device index for microphone')
+    parser.add_argument('--channels', type=int, default=4,
+                       help='Number of microphone channels (default: 4)')
+    parser.add_argument('--no-uart', action='store_true',
+                       help='Disable UART communication (for testing)')
+    parser.add_argument('--no-email', action='store_true',
+                       help='Disable email notifications (for testing)')
+    parser.add_argument('--debug', action='store_true',
+                       help='Enable debug logging')
+
+    args = parser.parse_args()
+
+    # Setup logging
+    log_level = logging.DEBUG if args.debug else logging.INFO
+    logging.basicConfig(
+        level=log_level,
+        format='%(asctime)s - %(levelname)s - %(message)s'
+    )
+
+    print("\n" + "=" * 70)
+    print("AUTONOMOUS BABY MONITOR ROBOT")
+    print("=" * 70)
+    print("\nSystem Architecture:")
+    print("  [LOW-POWER MODE] -> Quick 1-sec detection")
+    print("       |")
+    print("       v (3 consecutive positives)")
+    print("  [WAKE UP] -> Capture 3s context + TTA confirmation")
+    print("       |")
+    print("       v (>85% confidence)")
+    print("  [ACTIVE MODE]")
+    print("    1. Record 5s for localization (48kHz)")
+    print("    2. Run DOAnet (direction + distance)")
+    print("    3. Send email notification")
+    print("    4. Navigate robot via ESP32")
+    print("       |")
+    print("       v")
+    print("  [RETURN TO LOW-POWER MODE]")
+    print("\n" + "=" * 70)
+
+    # Initialize UART
+    if not args.no_uart:
+        if not init_uart():
+            logging.warning("UART init failed, running without robot control")
+    else:
+        logging.info("UART disabled (test mode)")
+
+    # Create monitor (will set callback after handler is created)
+    monitor = LowPowerBabyMonitor(
+        model_path=args.model,
+        device_index=args.device_index,
+        num_channels=args.channels,
+        on_cry_confirmed=None  # Set below
+    )
+
+    # Create response handler
+    handler = CryResponseHandler(
+        monitor=monitor,
+        enable_email=not args.no_email
+    )
+
+    # Connect callback
+    monitor.on_cry_confirmed = handler.handle_cry_detected
+
+    # Clear UART buffer
+    if ser is not None:
+        time.sleep(1)
+        ser.reset_input_buffer()
+
+    print(f"\nConfiguration:")
+    print(f"  Model: {args.model}")
+    print(f"  Channels: {args.channels}")
+    print(f"  UART: {'Enabled' if ser is not None else 'Disabled'}")
+    print(f"  Email: {'Enabled' if not args.no_email else 'Disabled'}")
+    print(f"\nEntering LOW-POWER listening mode...")
+    print("Press Ctrl+C to stop\n")
+
+    try:
+        # Run low-power listening loop
+        monitor.run_low_power_loop()
+
+    except KeyboardInterrupt:
+        print("\n\nShutting down...")
+        monitor.stop()
+
+    finally:
+        if ser is not None:
+            ser.close()
+        print("System stopped.")
 
 
 if __name__ == "__main__":
