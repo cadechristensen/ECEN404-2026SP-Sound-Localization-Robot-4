@@ -61,7 +61,7 @@ def main():
         print("Sound detected!")
         xyz = process_sound_file(sound_file) # returns x,y, distance in a tuple
 
-        if yz is None:
+        if xyz is None:
             print("Invalid sound data")
             continue
             
