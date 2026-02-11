@@ -4,6 +4,7 @@ import serial
 import time
 import argparse
 import logging
+import function_calls2
 from math import cos
 from math import sin
 from math import radians
@@ -61,13 +62,13 @@ def look_for_sound():
 
     # Initialize UART
     if not args.no_uart:
-        if not init_uart():
+        if not function_calls2.init_uart():
             logging.warning("UART init failed, running without robot control")
     else:
         logging.info("UART disabled (test mode)")
 
     # Create monitor (will set callback after handler is created)
-    monitor = LowPowerBabyMonitor(
+    monitor = function_calls2.LowPowerBabyMonitor(
         model_path=args.model,
         device_index=args.device_index,
         num_channels=args.channels,
@@ -75,7 +76,7 @@ def look_for_sound():
     )
 
     # Create response handler
-    handler = CryResponseHandler(
+    handler = function_calls2.CryResponseHandler(
         monitor=monitor,
         enable_email=not args.no_email
     )
