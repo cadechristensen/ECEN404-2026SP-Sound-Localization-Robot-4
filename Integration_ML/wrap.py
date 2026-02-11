@@ -121,9 +121,9 @@ def main():
             print("Invalid sound data")
             continue
             
-        decision=drive_robot(xyz)    
+        ans=drive_robot(xyz)    
         #Wait for ESP32 to finish navigating
-        if decision==True:
+        if ans==True:
             sendtouser()
             break
         else:
