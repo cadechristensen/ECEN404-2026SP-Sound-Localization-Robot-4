@@ -10,6 +10,8 @@ import logging
 from math import cos
 from math import sin
 from math import radians
+#app
+import start_services_and_notify
 
 ser = serial.Serial(
     port='/dev/serial0',
@@ -96,6 +98,7 @@ def drive_robot(coordinates):
     return ans
 
 def sendtouser():
+    start_services_and_notify()
     pass
 
 
