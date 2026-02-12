@@ -16,7 +16,6 @@ import cv2
 
 from zeroconf import Zeroconf, ServiceInfo
 
-# Configuration (env-driven)
 
 SENDER_EMAIL = os.environ.get("SENDER_EMAIL", "soundlocal4@gmail.com")
 RECEIVER_EMAIL = os.environ.get("RECEIVER_EMAIL", "cadechristensen@tamu.edu")
@@ -98,7 +97,6 @@ def get_host_ip():
 
     try:
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        # connect to an external DNS server (Google) — doesn't send data but lets us read local IP
         s.connect(("8.8.8.8", 80))
         ip = s.getsockname()[0]
         s.close()
@@ -175,9 +173,7 @@ def start_services_and_notify():
     elapsed = time.time() - start_time
     print(f"Device/server connection time: {elapsed:.2f} seconds")
 
-# -----------------------
-# Graceful shutdown handling
-# -----------------------
+
 def shutdown(signum=None, frame=None):
     global shutdown_requested, zeroconf_obj, mdns_info, camera
     if shutdown_requested:
@@ -185,7 +181,6 @@ def shutdown(signum=None, frame=None):
     print("Shutdown requested. Cleaning up...")
     shutdown_requested = True
     try:
-        # unregister mdns
         if zeroconf_obj and mdns_info:
             try:
                 zeroconf_obj.unregister_service(mdns_info)
@@ -211,19 +206,16 @@ def shutdown(signum=None, frame=None):
     print("Exiting.")
     sys.exit(0)
 
-# Register signal handlers for Ctrl+C and graceful termination
 signal.signal(signal.SIGINT, shutdown)
 signal.signal(signal.SIGTERM, shutdown)
 
-# -----------------------
-# Main entrypoint
-# -----------------------
+
 if __name__ == '__main__':
     print("Starting Flask MJPEG server with mDNS advertisement...")
     start_services_and_notify()
-    # Keep the main thread alive while background threads run
     try:
         while True:
             time.sleep(1)
     except KeyboardInterrupt:
         shutdown()
+
