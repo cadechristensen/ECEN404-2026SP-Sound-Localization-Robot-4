@@ -20,7 +20,7 @@ from zeroconf import Zeroconf, ServiceInfo
 
 SENDER_EMAIL = os.environ.get("SENDER_EMAIL", "soundlocal4@gmail.com")
 RECEIVER_EMAIL = os.environ.get("RECEIVER_EMAIL", "cadechristensen@tamu.edu")
-SMTP_PASSWORD = os.environ.get("SMTP_PASSWORD", "jqoo xinq appe ukge")
+SMTP_PASSWORD = os.environ.get("SMTP_PASSWORD", "")
 MDNS_NAME = os.environ.get("MDNS_NAME", "BabyMonitor")
 FLASK_PORT = int(os.environ.get("FLASK_PORT", "5000"))
 CAMERA_INDEX = int(os.environ.get("CAMERA_INDEX", "0"))
