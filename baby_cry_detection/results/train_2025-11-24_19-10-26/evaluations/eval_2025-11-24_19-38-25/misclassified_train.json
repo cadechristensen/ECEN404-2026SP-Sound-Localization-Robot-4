@@ -1,0 +1,4252 @@
+[
+  {
+    "filename": "data\\cry_baby\\cry_crycaleb\\0640_B_000.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 96.83792877197266,
+    "probabilities": [
+      0.9683793187141418,
+      0.031620729714632034
+    ]
+  },
+  {
+    "filename": "data\\hard_negatives\\adult_speech\\speech_001566.flac",
+    "true_label": "non_cry",
+    "predicted_label": "cry",
+    "confidence": 94.31809997558594,
+    "probabilities": [
+      0.05681898817420006,
+      0.943181037902832
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_ICSD\\0053017000.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 90.17566680908203,
+    "probabilities": [
+      0.9017567038536072,
+      0.098243348300457
+    ]
+  },
+  {
+    "filename": "data\\hard_negatives\\baby_noncry\\freesound_439090_Ethan - Giggle 4ogg.ogg",
+    "true_label": "non_cry",
+    "predicted_label": "cry",
+    "confidence": 54.24763488769531,
+    "probabilities": [
+      0.4575236737728119,
+      0.5424763560295105
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_ICSD\\0046001001.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 98.32707977294922,
+    "probabilities": [
+      0.9832708239555359,
+      0.0167292058467865
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_crycaleb\\anonymous275_D_000.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 87.40652465820312,
+    "probabilities": [
+      0.8740652799606323,
+      0.12593474984169006
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_ICSD\\strong_Infantcry_41_3168_4394.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 99.35206604003906,
+    "probabilities": [
+      0.9935206770896912,
+      0.00647931220009923
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_crycaleb\\anonymous202_D_005.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 73.09957885742188,
+    "probabilities": [
+      0.730995774269104,
+      0.2690041959285736
+    ]
+  },
+  {
+    "filename": "data\\hard_negatives\\crow\\1-96950-A-9.wav",
+    "true_label": "non_cry",
+    "predicted_label": "cry",
+    "confidence": 99.83720397949219,
+    "probabilities": [
+      0.0016280636191368103,
+      0.9983720183372498
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_ICSD\\0052020000.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 98.33483123779297,
+    "probabilities": [
+      0.9833483099937439,
+      0.01665174774825573
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_ICSD\\0076002001.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 74.09393310546875,
+    "probabilities": [
+      0.7409393191337585,
+      0.25906065106391907
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_crycaleb\\0644_B_004.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 93.4963607788086,
+    "probabilities": [
+      0.9349636435508728,
+      0.06503639370203018
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_ICSD\\0036008001.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 97.24687957763672,
+    "probabilities": [
+      0.9724687933921814,
+      0.027531247586011887
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_crycaleb\\0444_D_013.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 64.66728210449219,
+    "probabilities": [
+      0.6466728448867798,
+      0.35332709550857544
+    ]
+  },
+  {
+    "filename": "data\\hard_negatives\\rooster\\1-44831-A-1.wav",
+    "true_label": "non_cry",
+    "predicted_label": "cry",
+    "confidence": 74.9249496459961,
+    "probabilities": [
+      0.25075048208236694,
+      0.7492495179176331
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_crycaleb\\anonymous205_D_023.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 93.19462585449219,
+    "probabilities": [
+      0.9319462776184082,
+      0.0680537298321724
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_ICSD\\strong_Infantcry_82_0000_1825.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 98.5857162475586,
+    "probabilities": [
+      0.9858571290969849,
+      0.014142877422273159
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_ICSD\\0052196000.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 90.95125579833984,
+    "probabilities": [
+      0.9095125794410706,
+      0.09048748016357422
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry\\3-151081-B.ogg",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 75.66616821289062,
+    "probabilities": [
+      0.7566617131233215,
+      0.24333831667900085
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_ICSD\\strong_Infantcry_304_0550_4351.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 97.20051574707031,
+    "probabilities": [
+      0.9720051884651184,
+      0.02799484319984913
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_ICSD\\0009002002.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 99.2193374633789,
+    "probabilities": [
+      0.9921934008598328,
+      0.007806680165231228
+    ]
+  },
+  {
+    "filename": "data\\hard_negatives\\adult_speech\\speech_001467.flac",
+    "true_label": "non_cry",
+    "predicted_label": "cry",
+    "confidence": 59.61693572998047,
+    "probabilities": [
+      0.4038306176662445,
+      0.5961693525314331
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_crycaleb\\0231_B_021.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 98.17457580566406,
+    "probabilities": [
+      0.981745719909668,
+      0.01825428195297718
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_ICSD\\strong_Infantcry_238_6553_7105.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 86.15081787109375,
+    "probabilities": [
+      0.8615081906318665,
+      0.13849177956581116
+    ]
+  },
+  {
+    "filename": "data\\hard_negatives\\church_bells\\5-204741-A-46.wav",
+    "true_label": "non_cry",
+    "predicted_label": "cry",
+    "confidence": 99.64974212646484,
+    "probabilities": [
+      0.0035025160759687424,
+      0.9964974522590637
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry\\Louise_01.m4a_3.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 77.41382598876953,
+    "probabilities": [
+      0.7741382718086243,
+      0.22586172819137573
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_ICSD\\0074009002.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 86.09627532958984,
+    "probabilities": [
+      0.8609627485275269,
+      0.13903722167015076
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_crycaleb\\0637_D_004.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 98.54486846923828,
+    "probabilities": [
+      0.9854486584663391,
+      0.014551310800015926
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_ICSD\\strong_Infantcry_184.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 97.7851333618164,
+    "probabilities": [
+      0.9778513312339783,
+      0.02214871719479561
+    ]
+  },
+  {
+    "filename": "data\\hard_negatives\\rooster\\2-65750-A-1.wav",
+    "true_label": "non_cry",
+    "predicted_label": "cry",
+    "confidence": 87.49268341064453,
+    "probabilities": [
+      0.12507317960262299,
+      0.8749268651008606
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_ICSD\\strong_Infantcry_323_0937_1330.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 98.2656021118164,
+    "probabilities": [
+      0.9826560020446777,
+      0.017344031482934952
+    ]
+  },
+  {
+    "filename": "data\\hard_negatives\\pouring_water\\2-102414-B-17.wav",
+    "true_label": "non_cry",
+    "predicted_label": "cry",
+    "confidence": 89.84700012207031,
+    "probabilities": [
+      0.10153000801801682,
+      0.8984699845314026
+    ]
+  },
+  {
+    "filename": "data\\hard_negatives\\crackling_fire\\5-193473-A-12.wav",
+    "true_label": "non_cry",
+    "predicted_label": "cry",
+    "confidence": 99.25765228271484,
+    "probabilities": [
+      0.007423480972647667,
+      0.992576539516449
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry\\5afc6a14-a9d8-45f8-b31d-c79dd87cc8c6-1430757039803-1.7-m-48-bu_1.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 70.87184143066406,
+    "probabilities": [
+      0.7087184190750122,
+      0.2912815511226654
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_crycaleb\\0068_B_003.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 98.53972625732422,
+    "probabilities": [
+      0.9853972792625427,
+      0.014602751471102238
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_crycaleb\\0951_B_013.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 84.53190612792969,
+    "probabilities": [
+      0.8453190326690674,
+      0.15468095242977142
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_ICSD\\0083018001.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 96.7636947631836,
+    "probabilities": [
+      0.9676369428634644,
+      0.03236309066414833
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_ICSD\\strong_Infantcry_295_5493_5824.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 99.36653137207031,
+    "probabilities": [
+      0.993665337562561,
+      0.006334730423986912
+    ]
+  },
+  {
+    "filename": "data\\hard_negatives\\keyboard_typing\\1-94231-B-32.wav",
+    "true_label": "non_cry",
+    "predicted_label": "cry",
+    "confidence": 59.57759094238281,
+    "probabilities": [
+      0.40422412753105164,
+      0.5957759022712708
+    ]
+  },
+  {
+    "filename": "data\\hard_negatives\\hen\\2-72268-A-6.wav",
+    "true_label": "non_cry",
+    "predicted_label": "cry",
+    "confidence": 99.61808013916016,
+    "probabilities": [
+      0.0038192730862647295,
+      0.9961807727813721
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_ICSD\\0052038000.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 73.29669952392578,
+    "probabilities": [
+      0.7329670190811157,
+      0.2670329809188843
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_ICSD\\strong_Infantcry_126.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 95.66973114013672,
+    "probabilities": [
+      0.9566972851753235,
+      0.043302688747644424
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_ICSD\\strong_Infantcry_283_7720_8917.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 61.47233200073242,
+    "probabilities": [
+      0.6147233247756958,
+      0.3852766752243042
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_crycaleb\\0644_B_004.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 76.36796569824219,
+    "probabilities": [
+      0.7636796832084656,
+      0.23632033169269562
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_crycaleb\\0807_D_002.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 56.96944046020508,
+    "probabilities": [
+      0.5696943998336792,
+      0.430305540561676
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_ICSD\\0052050000.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 93.71341705322266,
+    "probabilities": [
+      0.9371342062950134,
+      0.06286580115556717
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_ICSD\\0052316000.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 87.73648071289062,
+    "probabilities": [
+      0.8773648142814636,
+      0.12263511121273041
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_crycaleb\\0687_D_010.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 87.65966796875,
+    "probabilities": [
+      0.8765966892242432,
+      0.12340330332517624
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_crycaleb\\0243_D_001.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 94.43101501464844,
+    "probabilities": [
+      0.9443101286888123,
+      0.05568983778357506
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_crycaleb\\anonymous074_B_007.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 88.5343017578125,
+    "probabilities": [
+      0.8853430151939392,
+      0.11465698480606079
+    ]
+  },
+  {
+    "filename": "data\\hard_negatives\\adult_speech\\speech_000893.flac",
+    "true_label": "non_cry",
+    "predicted_label": "cry",
+    "confidence": 56.94337463378906,
+    "probabilities": [
+      0.4305662512779236,
+      0.5694337487220764
+    ]
+  },
+  {
+    "filename": "data\\hard_negatives\\siren\\5-117122-A-42.wav",
+    "true_label": "non_cry",
+    "predicted_label": "cry",
+    "confidence": 97.31884765625,
+    "probabilities": [
+      0.026811519637703896,
+      0.9731884598731995
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_crycaleb\\0195_D_005.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 98.4597396850586,
+    "probabilities": [
+      0.984597384929657,
+      0.01540267001837492
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_ICSD\\0022001002.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 79.48200988769531,
+    "probabilities": [
+      0.7948201298713684,
+      0.20517988502979279
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_crycaleb\\0601_B_018.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 81.550537109375,
+    "probabilities": [
+      0.8155053853988647,
+      0.18449467420578003
+    ]
+  },
+  {
+    "filename": "data\\hard_negatives\\siren\\2-43806-A-42.wav",
+    "true_label": "non_cry",
+    "predicted_label": "cry",
+    "confidence": 60.524803161621094,
+    "probabilities": [
+      0.39475199580192566,
+      0.6052480340003967
+    ]
+  },
+  {
+    "filename": "data\\hard_negatives\\pig\\1-208757-C-2.wav",
+    "true_label": "non_cry",
+    "predicted_label": "cry",
+    "confidence": 99.86802673339844,
+    "probabilities": [
+      0.0013196609215810895,
+      0.9986802935600281
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_ICSD\\strong_Infantcry_55_7342_9511.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 94.0876693725586,
+    "probabilities": [
+      0.9408766627311707,
+      0.05912328138947487
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_crycaleb\\0167_D_007.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 50.92668533325195,
+    "probabilities": [
+      0.5092668533325195,
+      0.49073317646980286
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry\\7d1c2cd2-6fa1-499f-8ca8-a298198be4e7-1436850081753-1.7-m-04-hu.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 68.7006607055664,
+    "probabilities": [
+      0.6870065927505493,
+      0.3129934072494507
+    ]
+  },
+  {
+    "filename": "data\\hard_negatives\\laughing\\2-79775-A-26.wav",
+    "true_label": "non_cry",
+    "predicted_label": "cry",
+    "confidence": 66.84962463378906,
+    "probabilities": [
+      0.3315037190914154,
+      0.6684962511062622
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_crycaleb\\anonymous296_D_001.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 97.96367645263672,
+    "probabilities": [
+      0.9796367287635803,
+      0.020363254472613335
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_ICSD\\strong_Infantcry_112_0030_2283.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 72.72920227050781,
+    "probabilities": [
+      0.727292001247406,
+      0.2727079689502716
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_ICSD\\strong_Infantcry_331_5248_5736.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 99.36277770996094,
+    "probabilities": [
+      0.9936277866363525,
+      0.006372241768985987
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_crycaleb\\0557_D_003.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 97.79159545898438,
+    "probabilities": [
+      0.9779159426689148,
+      0.02208399958908558
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_crycaleb\\0401_D_003.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 90.64959716796875,
+    "probabilities": [
+      0.906495988368988,
+      0.09350399672985077
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_ICSD\\0010006002.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 77.63076782226562,
+    "probabilities": [
+      0.7763077020645142,
+      0.22369228303432465
+    ]
+  },
+  {
+    "filename": "data\\hard_negatives\\crow\\2-108763-A-9.wav",
+    "true_label": "non_cry",
+    "predicted_label": "cry",
+    "confidence": 90.4206314086914,
+    "probabilities": [
+      0.09579360485076904,
+      0.9042063355445862
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_ICSD\\0052132000.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 93.6552505493164,
+    "probabilities": [
+      0.9365525245666504,
+      0.0634474903345108
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_ICSD\\0052160000.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 52.74901580810547,
+    "probabilities": [
+      0.5274901390075684,
+      0.47250983119010925
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_ICSD\\strong_Infantcry_188_4371_5311.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 89.92222595214844,
+    "probabilities": [
+      0.8992222547531128,
+      0.10077769309282303
+    ]
+  },
+  {
+    "filename": "data\\hard_negatives\\baby_noncry\\freesound_416681_Baby Gibberish - Gee-Geewav.ogg",
+    "true_label": "non_cry",
+    "predicted_label": "cry",
+    "confidence": 85.04730224609375,
+    "probabilities": [
+      0.14952701330184937,
+      0.8504729866981506
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_ICSD\\strong_Infantcry_338_3380_3701.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 98.1716537475586,
+    "probabilities": [
+      0.9817165732383728,
+      0.018283389508724213
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry\\D54D9C2A-56ED-4338-9D1F-2ADB4E081DAD-1429807587-1.0-m-48-hu.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 90.41715240478516,
+    "probabilities": [
+      0.9041715264320374,
+      0.09582848101854324
+    ]
+  },
+  {
+    "filename": "data\\hard_negatives\\relabeled\\relabeled_from_cry_weak_Infantcry_382.wav",
+    "true_label": "non_cry",
+    "predicted_label": "cry",
+    "confidence": 96.38005065917969,
+    "probabilities": [
+      0.03619948402047157,
+      0.9638004899024963
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_ICSD\\0052036000.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 97.73265838623047,
+    "probabilities": [
+      0.9773265719413757,
+      0.0226734708994627
+    ]
+  },
+  {
+    "filename": "data\\hard_negatives\\water_drops\\4-197871-A-15.wav",
+    "true_label": "non_cry",
+    "predicted_label": "cry",
+    "confidence": 74.0508804321289,
+    "probabilities": [
+      0.2594912648200989,
+      0.7405087947845459
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_ICSD\\strong_Infantcry_168_3872_5533.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 93.75382232666016,
+    "probabilities": [
+      0.937538206577301,
+      0.062461789697408676
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_crycaleb\\0231_B_017.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 98.84173583984375,
+    "probabilities": [
+      0.9884173274040222,
+      0.011582623235881329
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_ICSD\\0052171000.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 98.59579467773438,
+    "probabilities": [
+      0.9859579205513,
+      0.014042042195796967
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_ICSD\\strong_Infantcry_10_4945_6008.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 74.59618377685547,
+    "probabilities": [
+      0.7459618449211121,
+      0.25403815507888794
+    ]
+  },
+  {
+    "filename": "data\\hard_negatives\\adult_speech\\speech_003843.flac",
+    "true_label": "non_cry",
+    "predicted_label": "cry",
+    "confidence": 62.584842681884766,
+    "probabilities": [
+      0.3741515576839447,
+      0.6258484125137329
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_crycaleb\\0592_D_005.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 98.2545166015625,
+    "probabilities": [
+      0.9825451374053955,
+      0.017454786226153374
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_ICSD\\strong_Infantcry_45_5049_5455.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 63.56858444213867,
+    "probabilities": [
+      0.6356858611106873,
+      0.36431413888931274
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_ICSD\\strong_Infantcry_159_8496_10000.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 96.8695068359375,
+    "probabilities": [
+      0.9686951041221619,
+      0.03130494803190231
+    ]
+  },
+  {
+    "filename": "data\\hard_negatives\\vacuum_cleaner\\5-263902-A-36.wav",
+    "true_label": "non_cry",
+    "predicted_label": "cry",
+    "confidence": 64.42124938964844,
+    "probabilities": [
+      0.3557875454425812,
+      0.6442124843597412
+    ]
+  },
+  {
+    "filename": "data\\hard_negatives\\adult_speech\\speech_000825.flac",
+    "true_label": "non_cry",
+    "predicted_label": "cry",
+    "confidence": 73.95926666259766,
+    "probabilities": [
+      0.26040732860565186,
+      0.7395926713943481
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_ICSD\\0040010001.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 93.38027954101562,
+    "probabilities": [
+      0.9338027834892273,
+      0.06619720906019211
+    ]
+  },
+  {
+    "filename": "data\\hard_negatives\\door_wood_knock\\5-218980-A-30.wav",
+    "true_label": "non_cry",
+    "predicted_label": "cry",
+    "confidence": 98.8899154663086,
+    "probabilities": [
+      0.011100882664322853,
+      0.9888991713523865
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry\\92d08bbe-553f-4844-85b1-15d572f06ea2-1436873211119-1.7-m-04-hu.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 96.63005065917969,
+    "probabilities": [
+      0.9663004875183105,
+      0.033699579536914825
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_crycaleb\\0520_D_010.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 74.54007720947266,
+    "probabilities": [
+      0.7454007863998413,
+      0.2545992434024811
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_ICSD\\strong_Infantcry_84_3372_5115.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 68.53949737548828,
+    "probabilities": [
+      0.6853949427604675,
+      0.3146050274372101
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_crycaleb\\0136_B_003.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 96.36078643798828,
+    "probabilities": [
+      0.9636078476905823,
+      0.03639215975999832
+    ]
+  },
+  {
+    "filename": "data\\hard_negatives\\hen\\1-31251-A-6.wav",
+    "true_label": "non_cry",
+    "predicted_label": "cry",
+    "confidence": 99.83795928955078,
+    "probabilities": [
+      0.0016203777631744742,
+      0.9983795881271362
+    ]
+  },
+  {
+    "filename": "data\\hard_negatives\\adult_speech\\speech_000453.flac",
+    "true_label": "non_cry",
+    "predicted_label": "cry",
+    "confidence": 52.05210494995117,
+    "probabilities": [
+      0.47947895526885986,
+      0.5205210447311401
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_ICSD\\strong_Infantcry_241_0000_6397.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 98.16771697998047,
+    "probabilities": [
+      0.9816771745681763,
+      0.018322862684726715
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_crycaleb\\anonymous167_D_015.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 96.43738555908203,
+    "probabilities": [
+      0.9643738865852356,
+      0.03562610596418381
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_ICSD\\strong_Infantcry_212_6892_7894.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 99.3646469116211,
+    "probabilities": [
+      0.993646502494812,
+      0.006353532429784536
+    ]
+  },
+  {
+    "filename": "data\\hard_negatives\\relabeled\\relabeled_from_cry_a40b9b8d-e4bc-457a-badf-f38bdbc0c358-1430017040912-1.7-m-26-dc.wav",
+    "true_label": "non_cry",
+    "predicted_label": "cry",
+    "confidence": 97.25174713134766,
+    "probabilities": [
+      0.02748258039355278,
+      0.9725174903869629
+    ]
+  },
+  {
+    "filename": "data\\hard_negatives\\baby_noncry\\freesound_416687_Baby Language - Meow Cat Soundwav.ogg",
+    "true_label": "non_cry",
+    "predicted_label": "cry",
+    "confidence": 94.03178405761719,
+    "probabilities": [
+      0.05968215689063072,
+      0.9403178095817566
+    ]
+  },
+  {
+    "filename": "data\\hard_negatives\\train\\4-178881-A-45.wav",
+    "true_label": "non_cry",
+    "predicted_label": "cry",
+    "confidence": 99.31963348388672,
+    "probabilities": [
+      0.0068036895245313644,
+      0.9931963682174683
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_crycaleb\\0243_D_001.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 51.45094299316406,
+    "probabilities": [
+      0.5145094394683838,
+      0.4854905605316162
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_ICSD\\0052067000.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 84.92634582519531,
+    "probabilities": [
+      0.8492634892463684,
+      0.15073652565479279
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_ICSD\\strong_Infantcry_134_5436_5894.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 99.12618255615234,
+    "probabilities": [
+      0.9912618398666382,
+      0.00873818714171648
+    ]
+  },
+  {
+    "filename": "data\\hard_negatives\\baby_noncry\\freesound_260823_Baby say daddawav.ogg",
+    "true_label": "non_cry",
+    "predicted_label": "cry",
+    "confidence": 99.51881408691406,
+    "probabilities": [
+      0.004811912775039673,
+      0.9951881170272827
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry\\35D58153-7AB7-443D-BED0-2D7ABF73743F-1431855847-1.1-m-04-hu.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 63.06960678100586,
+    "probabilities": [
+      0.6306960582733154,
+      0.36930400133132935
+    ]
+  },
+  {
+    "filename": "data\\hard_negatives\\drinking_sipping\\3-133977-A-29.wav",
+    "true_label": "non_cry",
+    "predicted_label": "cry",
+    "confidence": 87.11988830566406,
+    "probabilities": [
+      0.12880104780197144,
+      0.8711988925933838
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_crycaleb\\anonymous178_D_000.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 96.26011657714844,
+    "probabilities": [
+      0.9626011848449707,
+      0.03739883378148079
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_ICSD\\0052013000.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 50.69563293457031,
+    "probabilities": [
+      0.5069563388824463,
+      0.49304360151290894
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_crycaleb\\0412_B_007.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 70.95999908447266,
+    "probabilities": [
+      0.7095999717712402,
+      0.2903999984264374
+    ]
+  },
+  {
+    "filename": "data\\hard_negatives\\child_tantrum\\525089_BaoLucGiaĐinh0.mp3",
+    "true_label": "non_cry",
+    "predicted_label": "cry",
+    "confidence": 94.47218322753906,
+    "probabilities": [
+      0.05527815595269203,
+      0.9447218179702759
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_ICSD\\0043002001.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 98.62770080566406,
+    "probabilities": [
+      0.9862770438194275,
+      0.013722953386604786
+    ]
+  },
+  {
+    "filename": "data\\hard_negatives\\adult_speech\\speech_003672.flac",
+    "true_label": "non_cry",
+    "predicted_label": "cry",
+    "confidence": 50.03634262084961,
+    "probabilities": [
+      0.49963659048080444,
+      0.5003634095191956
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_ICSD\\0023005001.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 98.39185333251953,
+    "probabilities": [
+      0.9839185476303101,
+      0.01608140952885151
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_ICSD\\strong_Infantcry_263_7191_9130.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 95.67741394042969,
+    "probabilities": [
+      0.956774115562439,
+      0.043225888162851334
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_crycaleb\\0794_B_006.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 97.60562133789062,
+    "probabilities": [
+      0.9760562181472778,
+      0.02394370548427105
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_crycaleb\\anonymous052_B_006.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 58.251197814941406,
+    "probabilities": [
+      0.5825119614601135,
+      0.4174880087375641
+    ]
+  },
+  {
+    "filename": "data\\hard_negatives\\glass_breaking\\2-173559-A-39.wav",
+    "true_label": "non_cry",
+    "predicted_label": "cry",
+    "confidence": 98.81092834472656,
+    "probabilities": [
+      0.011890710331499577,
+      0.988109290599823
+    ]
+  },
+  {
+    "filename": "data\\hard_negatives\\adult_speech\\speech_000909.flac",
+    "true_label": "non_cry",
+    "predicted_label": "cry",
+    "confidence": 73.09659576416016,
+    "probabilities": [
+      0.2690340578556061,
+      0.7309659719467163
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_ICSD\\strong_Infantcry_212_8164_9243.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 98.70189666748047,
+    "probabilities": [
+      0.9870189428329468,
+      0.012981044128537178
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_ICSD\\0053014000.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 94.84381103515625,
+    "probabilities": [
+      0.9484381079673767,
+      0.0515618622303009
+    ]
+  },
+  {
+    "filename": "data\\hard_negatives\\rooster\\2-65750-A-1.wav",
+    "true_label": "non_cry",
+    "predicted_label": "cry",
+    "confidence": 99.77951049804688,
+    "probabilities": [
+      0.002204919932410121,
+      0.9977951049804688
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_ICSD\\0070002000.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 78.44216918945312,
+    "probabilities": [
+      0.7844216823577881,
+      0.21557831764221191
+    ]
+  },
+  {
+    "filename": "data\\hard_negatives\\baby_noncry\\laugh_2.m4a_12.wav",
+    "true_label": "non_cry",
+    "predicted_label": "cry",
+    "confidence": 51.751197814941406,
+    "probabilities": [
+      0.4824880063533783,
+      0.5175119638442993
+    ]
+  },
+  {
+    "filename": "data\\hard_negatives\\baby_noncry\\freesound_416677_Baby Gibberish - Ah-Bah-Bahwav.ogg",
+    "true_label": "non_cry",
+    "predicted_label": "cry",
+    "confidence": 85.26167297363281,
+    "probabilities": [
+      0.1473831981420517,
+      0.8526167273521423
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_ICSD\\strong_Infantcry_344_0189_0959.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 54.480709075927734,
+    "probabilities": [
+      0.5448070764541626,
+      0.4551929235458374
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry\\090C15A8-5406-4EA5-97A3-81F6527227C0-1430147525-1.0-m-72-hu.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 59.949153900146484,
+    "probabilities": [
+      0.599491536617279,
+      0.40050849318504333
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_ICSD\\strong_Infantcry_331_5248_5736.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 98.24137878417969,
+    "probabilities": [
+      0.9824137687683105,
+      0.017586197704076767
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_ICSD\\0037006001.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 95.97975158691406,
+    "probabilities": [
+      0.9597975015640259,
+      0.04020252078771591
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_crycaleb\\anonymous315_D_005.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 52.85304260253906,
+    "probabilities": [
+      0.5285304188728333,
+      0.471469521522522
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry\\8f4dbf5a-b504-4452-b6ac-94e646a6a052-1430735040980-1.7-f-72-hu.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 98.48884582519531,
+    "probabilities": [
+      0.9848884344100952,
+      0.015111583285033703
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_crycaleb\\0195_D_005.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 97.71075439453125,
+    "probabilities": [
+      0.9771075248718262,
+      0.022892441600561142
+    ]
+  },
+  {
+    "filename": "data\\hard_negatives\\child_tantrum\\675080_S11-07Largegroupofkidsyel.mp3",
+    "true_label": "non_cry",
+    "predicted_label": "cry",
+    "confidence": 99.08540344238281,
+    "probabilities": [
+      0.009145994670689106,
+      0.990854024887085
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_crycaleb\\0005_B_012.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 95.90927124023438,
+    "probabilities": [
+      0.9590926766395569,
+      0.04090733453631401
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_ICSD\\strong_Infantcry_162_0282_0689.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 94.86013793945312,
+    "probabilities": [
+      0.9486013650894165,
+      0.05139864236116409
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_crycaleb\\0842_B_018.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 97.83489227294922,
+    "probabilities": [
+      0.9783489108085632,
+      0.021651115268468857
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_ICSD\\strong_Infantcry_401_7189_7646.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 93.61505126953125,
+    "probabilities": [
+      0.9361505508422852,
+      0.06384944915771484
+    ]
+  },
+  {
+    "filename": "data\\hard_negatives\\baby_noncry\\freesound_79610_soopastarlaughHighPasswav.ogg",
+    "true_label": "non_cry",
+    "predicted_label": "cry",
+    "confidence": 72.17044067382812,
+    "probabilities": [
+      0.2782956063747406,
+      0.7217044234275818
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_ICSD\\0052121000.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 91.33336639404297,
+    "probabilities": [
+      0.9133336544036865,
+      0.08666637539863586
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_ICSD\\0013002002.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 91.34761047363281,
+    "probabilities": [
+      0.9134761095046997,
+      0.08652395755052567
+    ]
+  },
+  {
+    "filename": "data\\hard_negatives\\pig\\3-253084-A-2.wav",
+    "true_label": "non_cry",
+    "predicted_label": "cry",
+    "confidence": 88.46622467041016,
+    "probabilities": [
+      0.11533770710229874,
+      0.8846622705459595
+    ]
+  },
+  {
+    "filename": "data\\hard_negatives\\rooster\\4-164021-A-1.wav",
+    "true_label": "non_cry",
+    "predicted_label": "cry",
+    "confidence": 94.67288208007812,
+    "probabilities": [
+      0.05327114462852478,
+      0.9467288255691528
+    ]
+  },
+  {
+    "filename": "data\\hard_negatives\\adult_speech\\speech_002489.flac",
+    "true_label": "non_cry",
+    "predicted_label": "cry",
+    "confidence": 62.34347915649414,
+    "probabilities": [
+      0.37656518816947937,
+      0.6234347820281982
+    ]
+  },
+  {
+    "filename": "data\\hard_negatives\\siren\\4-111671-B-42.wav",
+    "true_label": "non_cry",
+    "predicted_label": "cry",
+    "confidence": 61.823482513427734,
+    "probabilities": [
+      0.3817651569843292,
+      0.6182348132133484
+    ]
+  },
+  {
+    "filename": "data\\hard_negatives\\adult_speech\\speech_001439.flac",
+    "true_label": "non_cry",
+    "predicted_label": "cry",
+    "confidence": 94.56857299804688,
+    "probabilities": [
+      0.05431421473622322,
+      0.9456857442855835
+    ]
+  },
+  {
+    "filename": "data\\hard_negatives\\baby_noncry\\laugh_1.m4a_71.wav",
+    "true_label": "non_cry",
+    "predicted_label": "cry",
+    "confidence": 97.68623352050781,
+    "probabilities": [
+      0.02313770167529583,
+      0.9768623113632202
+    ]
+  },
+  {
+    "filename": "data\\hard_negatives\\drinking_sipping\\2-92978-A-29.wav",
+    "true_label": "non_cry",
+    "predicted_label": "cry",
+    "confidence": 93.91900634765625,
+    "probabilities": [
+      0.06080997362732887,
+      0.9391900897026062
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_ICSD\\strong_Infantcry_48_0127_1695.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 87.4437255859375,
+    "probabilities": [
+      0.8744372725486755,
+      0.12556271255016327
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_crycaleb\\0520_D_010.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 98.3698959350586,
+    "probabilities": [
+      0.9836989641189575,
+      0.01630100980401039
+    ]
+  },
+  {
+    "filename": "data\\hard_negatives\\rooster\\4-164859-A-1.wav",
+    "true_label": "non_cry",
+    "predicted_label": "cry",
+    "confidence": 83.06758117675781,
+    "probabilities": [
+      0.16932418942451477,
+      0.8306758403778076
+    ]
+  },
+  {
+    "filename": "data\\hard_negatives\\chainsaw\\4-149294-B-41.wav",
+    "true_label": "non_cry",
+    "predicted_label": "cry",
+    "confidence": 90.7138442993164,
+    "probabilities": [
+      0.09286148846149445,
+      0.907138466835022
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_ICSD\\0070009000.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 98.22254180908203,
+    "probabilities": [
+      0.9822254180908203,
+      0.017774511128664017
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_ICSD\\0052248000.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 78.11909484863281,
+    "probabilities": [
+      0.7811909317970276,
+      0.21880900859832764
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_crycaleb\\0198_B_004.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 97.90049743652344,
+    "probabilities": [
+      0.979004979133606,
+      0.020995082333683968
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry\\d6cda191-4962-4308-9a36-46d5648a95ed-1431700349754-1.7-m-04-sc.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 85.30804443359375,
+    "probabilities": [
+      0.8530804514884949,
+      0.14691956341266632
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_ICSD\\0072005002.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 99.0841064453125,
+    "probabilities": [
+      0.9908410310745239,
+      0.00915900245308876
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_ICSD\\strong_Infantcry_375_6268_6661.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 76.1477279663086,
+    "probabilities": [
+      0.7614772915840149,
+      0.2385227233171463
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_crycaleb\\0203_D_006.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 95.66951751708984,
+    "probabilities": [
+      0.9566951394081116,
+      0.0433049276471138
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_ICSD\\strong_Infantcry_170_5962_6790.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 80.99398040771484,
+    "probabilities": [
+      0.8099398016929626,
+      0.19006015360355377
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_ICSD\\0053060000.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 74.17802429199219,
+    "probabilities": [
+      0.7417802810668945,
+      0.2582196891307831
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_crycaleb\\anonymous023_B_000.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 98.39403533935547,
+    "probabilities": [
+      0.9839403629302979,
+      0.016059696674346924
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_crycaleb\\0755_D_009.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 97.98736572265625,
+    "probabilities": [
+      0.9798736572265625,
+      0.020126428455114365
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_ICSD\\strong_Infantcry_96_0000_1181.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 94.24541473388672,
+    "probabilities": [
+      0.9424541592597961,
+      0.05754584074020386
+    ]
+  },
+  {
+    "filename": "data\\hard_negatives\\relabeled\\relabeled_from_cry_a40b9b8d-e4bc-457a-badf-f38bdbc0c358-1430017040912-1.7-m-26-dc.wav",
+    "true_label": "non_cry",
+    "predicted_label": "cry",
+    "confidence": 91.99043273925781,
+    "probabilities": [
+      0.08009570837020874,
+      0.9199042916297913
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_ICSD\\0052326000.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 92.60118865966797,
+    "probabilities": [
+      0.926011860370636,
+      0.07398813962936401
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_ICSD\\strong_Infantcry_398_7150_10000.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 99.13931274414062,
+    "probabilities": [
+      0.9913930892944336,
+      0.008606884628534317
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_ICSD\\strong_Infantcry_48_0127_1695.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 65.89766693115234,
+    "probabilities": [
+      0.658976674079895,
+      0.341023325920105
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_ICSD\\0070012000.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 53.66393280029297,
+    "probabilities": [
+      0.5366393327713013,
+      0.46336063742637634
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_ICSD\\0051002001.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 90.89681243896484,
+    "probabilities": [
+      0.9089681506156921,
+      0.09103188663721085
+    ]
+  },
+  {
+    "filename": "data\\hard_negatives\\cat\\4-149940-A-5.wav",
+    "true_label": "non_cry",
+    "predicted_label": "cry",
+    "confidence": 86.15650939941406,
+    "probabilities": [
+      0.13843485713005066,
+      0.861565113067627
+    ]
+  },
+  {
+    "filename": "data\\hard_negatives\\cat\\2-69131-B-5.wav",
+    "true_label": "non_cry",
+    "predicted_label": "cry",
+    "confidence": 55.254966735839844,
+    "probabilities": [
+      0.4474503695964813,
+      0.5525496602058411
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_ICSD\\0037001001.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 79.785888671875,
+    "probabilities": [
+      0.7978588938713074,
+      0.20214109122753143
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry\\a40b9b8d-e4bc-457a-badf-f38bdbc0c358-1430016779981-1.7-m-26-hu.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 56.88436508178711,
+    "probabilities": [
+      0.5688436627388,
+      0.4311562776565552
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_crycaleb\\0724_D_015.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 95.0578842163086,
+    "probabilities": [
+      0.9505788087844849,
+      0.04942118376493454
+    ]
+  },
+  {
+    "filename": "data\\hard_negatives\\baby_noncry\\freesound_260823_Baby say daddawav.ogg",
+    "true_label": "non_cry",
+    "predicted_label": "cry",
+    "confidence": 87.10832214355469,
+    "probabilities": [
+      0.12891684472560883,
+      0.8710831999778748
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_crycaleb\\0061_B_000.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 93.8658447265625,
+    "probabilities": [
+      0.9386584758758545,
+      0.061341483145952225
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_ICSD\\strong_Infantcry_186.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 53.66633605957031,
+    "probabilities": [
+      0.5366633534431458,
+      0.46333664655685425
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_ICSD\\0052238000.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 83.90480041503906,
+    "probabilities": [
+      0.8390479683876038,
+      0.16095203161239624
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry\\a40b9b8d-e4bc-457a-badf-f38bdbc0c358-1430016779981-1.7-m-26-hu.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 53.6336784362793,
+    "probabilities": [
+      0.5363367795944214,
+      0.46366316080093384
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_ICSD\\strong_Infantcry_350_5654_6295.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 95.05302429199219,
+    "probabilities": [
+      0.9505302309989929,
+      0.0494697205722332
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_ICSD\\0083008001.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 81.60655975341797,
+    "probabilities": [
+      0.8160656094551086,
+      0.18393439054489136
+    ]
+  },
+  {
+    "filename": "data\\hard_negatives\\adult_speech\\speech_004125.flac",
+    "true_label": "non_cry",
+    "predicted_label": "cry",
+    "confidence": 99.30217742919922,
+    "probabilities": [
+      0.006978210061788559,
+      0.9930217862129211
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_ICSD\\strong_Infantcry_200_0000_0551.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 92.54254913330078,
+    "probabilities": [
+      0.9254254698753357,
+      0.0745745524764061
+    ]
+  },
+  {
+    "filename": "data\\hard_negatives\\adult_scream\\222540_WOMANSCREAM.mp3",
+    "true_label": "non_cry",
+    "predicted_label": "cry",
+    "confidence": 57.69561004638672,
+    "probabilities": [
+      0.4230439364910126,
+      0.5769560933113098
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_crycaleb\\0433_D_015.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 98.00277709960938,
+    "probabilities": [
+      0.9800277352333069,
+      0.019972287118434906
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_ICSD\\0036008001.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 97.11978149414062,
+    "probabilities": [
+      0.971197783946991,
+      0.028802283108234406
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_ICSD\\strong_Infantcry_269_5001_6748.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 94.0685806274414,
+    "probabilities": [
+      0.9406858086585999,
+      0.059314195066690445
+    ]
+  },
+  {
+    "filename": "data\\hard_negatives\\toilet_flush\\5-156698-A-18.wav",
+    "true_label": "non_cry",
+    "predicted_label": "cry",
+    "confidence": 99.25162506103516,
+    "probabilities": [
+      0.007483749650418758,
+      0.9925162196159363
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_ICSD\\0078001000.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 98.06690979003906,
+    "probabilities": [
+      0.9806690812110901,
+      0.019330915063619614
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_ICSD\\strong_Infantcry_301_9196_10000.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 99.14897918701172,
+    "probabilities": [
+      0.991489827632904,
+      0.008510123938322067
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_ICSD\\strong_Infantcry_398_7150_10000.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 98.84310913085938,
+    "probabilities": [
+      0.9884310960769653,
+      0.011568897403776646
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_ICSD\\strong_Infantcry_146_5873_6966.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 98.16442108154297,
+    "probabilities": [
+      0.9816442131996155,
+      0.018355842679739
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_ICSD\\strong_Infantcry_45_7201_7893.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 87.87069702148438,
+    "probabilities": [
+      0.8787069320678711,
+      0.1212930828332901
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_ICSD\\strong_Infantcry_252_3467_4230.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 90.91254425048828,
+    "probabilities": [
+      0.9091254472732544,
+      0.0908745750784874
+    ]
+  },
+  {
+    "filename": "data\\hard_negatives\\child_tantrum\\435634_Trash.MP3.mp3",
+    "true_label": "non_cry",
+    "predicted_label": "cry",
+    "confidence": 70.12004089355469,
+    "probabilities": [
+      0.2987995147705078,
+      0.7012004256248474
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_crycaleb\\0330_D_000.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 98.4807357788086,
+    "probabilities": [
+      0.9848073720932007,
+      0.015192652121186256
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_crycaleb\\anonymous107_B_001.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 96.04481506347656,
+    "probabilities": [
+      0.960448145866394,
+      0.03955183923244476
+    ]
+  },
+  {
+    "filename": "data\\hard_negatives\\relabeled\\relabeled_from_cry_weak_Infantcry_1222.wav",
+    "true_label": "non_cry",
+    "predicted_label": "cry",
+    "confidence": 94.09913635253906,
+    "probabilities": [
+      0.05900856852531433,
+      0.9409914016723633
+    ]
+  },
+  {
+    "filename": "data\\hard_negatives\\baby_noncry\\freesound_416665_Baby Gibberish 14wav.ogg",
+    "true_label": "non_cry",
+    "predicted_label": "cry",
+    "confidence": 58.59407043457031,
+    "probabilities": [
+      0.41405928134918213,
+      0.5859407186508179
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_ICSD\\strong_Infantcry_256_1676_2106.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 97.65411376953125,
+    "probabilities": [
+      0.9765411019325256,
+      0.02345895580947399
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_ICSD\\0039002001.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 71.10678100585938,
+    "probabilities": [
+      0.711067795753479,
+      0.2889322340488434
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_ICSD\\strong_Infantcry_8_0000_0504.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 51.092689514160156,
+    "probabilities": [
+      0.5109269022941589,
+      0.48907312750816345
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_crycaleb\\0088_B_011.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 60.228912353515625,
+    "probabilities": [
+      0.6022891402244568,
+      0.3977108597755432
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_crycaleb\\0480_B_007.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 98.56639099121094,
+    "probabilities": [
+      0.985663890838623,
+      0.014336087740957737
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry\\generated2_d6cda191-4962-4308-9a36-46d5648a95ed-1431700349754-1.7-m-04-sc.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 90.98844146728516,
+    "probabilities": [
+      0.9098843932151794,
+      0.09011565148830414
+    ]
+  },
+  {
+    "filename": "data\\hard_negatives\\adult_speech\\speech_002353.flac",
+    "true_label": "non_cry",
+    "predicted_label": "cry",
+    "confidence": 54.44819259643555,
+    "probabilities": [
+      0.4555180072784424,
+      0.5444819331169128
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_crycaleb\\anonymous204_D_013.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 98.17436981201172,
+    "probabilities": [
+      0.9817436933517456,
+      0.01825629733502865
+    ]
+  },
+  {
+    "filename": "data\\hard_negatives\\adult_speech\\speech_000867.flac",
+    "true_label": "non_cry",
+    "predicted_label": "cry",
+    "confidence": 55.516536712646484,
+    "probabilities": [
+      0.4448346495628357,
+      0.5551653504371643
+    ]
+  },
+  {
+    "filename": "data\\hard_negatives\\baby_noncry\\freesound_439090_Ethan - Giggle 4ogg.ogg",
+    "true_label": "non_cry",
+    "predicted_label": "cry",
+    "confidence": 72.44082641601562,
+    "probabilities": [
+      0.2755917012691498,
+      0.7244082689285278
+    ]
+  },
+  {
+    "filename": "data\\hard_negatives\\baby_noncry\\laugh_2.m4a_19.wav",
+    "true_label": "non_cry",
+    "predicted_label": "cry",
+    "confidence": 98.80088806152344,
+    "probabilities": [
+      0.011991206556558609,
+      0.9880088567733765
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_ICSD\\strong_Infantcry_178_9402_10000.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 74.01932525634766,
+    "probabilities": [
+      0.740193247795105,
+      0.25980672240257263
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_ICSD\\strong_Infantcry_159.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 99.26023864746094,
+    "probabilities": [
+      0.9926024079322815,
+      0.007397626992315054
+    ]
+  },
+  {
+    "filename": "data\\hard_negatives\\coughing\\2-87794-A-24.wav",
+    "true_label": "non_cry",
+    "predicted_label": "cry",
+    "confidence": 99.27194213867188,
+    "probabilities": [
+      0.007280567195266485,
+      0.9927194118499756
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry\\999bf14b-e417-4b44-b746-9253f81efe38-1430845018393-1.7-m-26-ch.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 50.688140869140625,
+    "probabilities": [
+      0.5068814158439636,
+      0.493118554353714
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_crycaleb\\0574_D_003.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 65.30065155029297,
+    "probabilities": [
+      0.6530064940452576,
+      0.34699347615242004
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_crycaleb\\anonymous155_B_010.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 99.02151489257812,
+    "probabilities": [
+      0.9902151823043823,
+      0.00978483259677887
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_ICSD\\0053003000.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 86.27465057373047,
+    "probabilities": [
+      0.86274653673172,
+      0.13725347816944122
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry\\2439388A-9CF2-4D3B-9534-E6951FC9EAD4-1436877953-1.1-m-26-hu.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 63.219688415527344,
+    "probabilities": [
+      0.6321969032287598,
+      0.3678031265735626
+    ]
+  },
+  {
+    "filename": "data\\hard_negatives\\hen\\4-204830-A-6.wav",
+    "true_label": "non_cry",
+    "predicted_label": "cry",
+    "confidence": 51.226688385009766,
+    "probabilities": [
+      0.4877331554889679,
+      0.5122668743133545
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_crycaleb\\0157_B_000.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 94.11042022705078,
+    "probabilities": [
+      0.9411042332649231,
+      0.058895789086818695
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_crycaleb\\anonymous234_D_021.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 96.37535095214844,
+    "probabilities": [
+      0.9637535214424133,
+      0.03624643757939339
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_ICSD\\0021002001.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 86.23949432373047,
+    "probabilities": [
+      0.8623949289321899,
+      0.13760501146316528
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_ICSD\\0023002001.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 57.68971252441406,
+    "probabilities": [
+      0.576897144317627,
+      0.42310282588005066
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_ICSD\\strong_Infantcry_277_7690_8763.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 97.39306640625,
+    "probabilities": [
+      0.9739306569099426,
+      0.02606935240328312
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_crycaleb\\0414_D_014.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 98.08048248291016,
+    "probabilities": [
+      0.9808048605918884,
+      0.019195113331079483
+    ]
+  },
+  {
+    "filename": "data\\hard_negatives\\hen\\2-72268-A-6.wav",
+    "true_label": "non_cry",
+    "predicted_label": "cry",
+    "confidence": 99.62665557861328,
+    "probabilities": [
+      0.003733463352546096,
+      0.9962665438652039
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_crycaleb\\0520_D_000.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 95.65267181396484,
+    "probabilities": [
+      0.9565266966819763,
+      0.04347328096628189
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_ICSD\\0052007000.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 90.20138549804688,
+    "probabilities": [
+      0.9020138382911682,
+      0.09798619896173477
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry\\D833237F-1F7C-4338-BEDE-84C0CF5F4145-1430083995-1.0-f-26-hu.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 94.6449966430664,
+    "probabilities": [
+      0.9464499354362488,
+      0.05355004966259003
+    ]
+  },
+  {
+    "filename": "data\\hard_negatives\\airplane\\5-251971-A-47.wav",
+    "true_label": "non_cry",
+    "predicted_label": "cry",
+    "confidence": 99.8657455444336,
+    "probabilities": [
+      0.001342465286143124,
+      0.9986574649810791
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_ICSD\\0017003002.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 74.65103149414062,
+    "probabilities": [
+      0.7465103268623352,
+      0.25348973274230957
+    ]
+  },
+  {
+    "filename": "data\\hard_negatives\\toilet_flush\\1-56269-A-18.wav",
+    "true_label": "non_cry",
+    "predicted_label": "cry",
+    "confidence": 50.87419128417969,
+    "probabilities": [
+      0.49125808477401733,
+      0.5087419152259827
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_ICSD\\strong_Infantcry_31_3816_4341.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 97.94876861572266,
+    "probabilities": [
+      0.9794877171516418,
+      0.02051224187016487
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_ICSD\\0052222000.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 79.91019439697266,
+    "probabilities": [
+      0.7991019487380981,
+      0.20089799165725708
+    ]
+  },
+  {
+    "filename": "data\\hard_negatives\\pouring_water\\5-212734-A-17.wav",
+    "true_label": "non_cry",
+    "predicted_label": "cry",
+    "confidence": 97.40057373046875,
+    "probabilities": [
+      0.025994256138801575,
+      0.9740057587623596
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_crycaleb\\0560_D_000.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 51.205970764160156,
+    "probabilities": [
+      0.5120596885681152,
+      0.4879402816295624
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_ICSD\\0053083000.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 94.47570037841797,
+    "probabilities": [
+      0.9447569847106934,
+      0.05524302273988724
+    ]
+  },
+  {
+    "filename": "data\\hard_negatives\\hen\\2-120586-A-6.wav",
+    "true_label": "non_cry",
+    "predicted_label": "cry",
+    "confidence": 98.0779037475586,
+    "probabilities": [
+      0.019220933318138123,
+      0.9807790517807007
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_crycaleb\\anonymous318_D_012.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 97.53678131103516,
+    "probabilities": [
+      0.9753678441047668,
+      0.02463219128549099
+    ]
+  },
+  {
+    "filename": "data\\hard_negatives\\drinking_sipping\\1-67230-A-29.wav",
+    "true_label": "non_cry",
+    "predicted_label": "cry",
+    "confidence": 99.01251983642578,
+    "probabilities": [
+      0.009874857030808926,
+      0.9901251792907715
+    ]
+  },
+  {
+    "filename": "data\\hard_negatives\\relabeled\\relabeled_from_cry_weak_Infantcry_1366.wav",
+    "true_label": "non_cry",
+    "predicted_label": "cry",
+    "confidence": 54.15789031982422,
+    "probabilities": [
+      0.45842111110687256,
+      0.5415788888931274
+    ]
+  },
+  {
+    "filename": "data\\hard_negatives\\cat\\1-47819-B-5.wav",
+    "true_label": "non_cry",
+    "predicted_label": "cry",
+    "confidence": 91.04378509521484,
+    "probabilities": [
+      0.08956214785575867,
+      0.9104378819465637
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_ICSD\\0045002002.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 71.09868621826172,
+    "probabilities": [
+      0.710986852645874,
+      0.289013147354126
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_crycaleb\\0755_D_007.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 96.688720703125,
+    "probabilities": [
+      0.9668871760368347,
+      0.03311280533671379
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_crycaleb\\0215_D_029.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 78.59070587158203,
+    "probabilities": [
+      0.7859070301055908,
+      0.21409296989440918
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_crycaleb\\0302_D_013.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 99.14791107177734,
+    "probabilities": [
+      0.9914790987968445,
+      0.008520904928445816
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_ICSD\\0014003002.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 98.4200439453125,
+    "probabilities": [
+      0.9842004179954529,
+      0.015799561515450478
+    ]
+  },
+  {
+    "filename": "data\\hard_negatives\\baby_noncry\\freesound_18292_tebebeaif.ogg",
+    "true_label": "non_cry",
+    "predicted_label": "cry",
+    "confidence": 81.91788482666016,
+    "probabilities": [
+      0.18082116544246674,
+      0.8191788196563721
+    ]
+  },
+  {
+    "filename": "data\\hard_negatives\\adult_speech\\speech_004183.flac",
+    "true_label": "non_cry",
+    "predicted_label": "cry",
+    "confidence": 92.2720947265625,
+    "probabilities": [
+      0.07727909833192825,
+      0.9227209091186523
+    ]
+  },
+  {
+    "filename": "data\\hard_negatives\\baby_noncry\\freesound_240827_marvie_baaaa_01flac.ogg",
+    "true_label": "non_cry",
+    "predicted_label": "cry",
+    "confidence": 87.67826080322266,
+    "probabilities": [
+      0.12321735173463821,
+      0.8767825961112976
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry\\3-151081-A.ogg",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 89.58202362060547,
+    "probabilities": [
+      0.8958202004432678,
+      0.10417981445789337
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_crycaleb\\0651_B_014.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 89.4058837890625,
+    "probabilities": [
+      0.8940588235855103,
+      0.10594119876623154
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_crycaleb\\anonymous312_D_010.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 92.68228149414062,
+    "probabilities": [
+      0.92682284116745,
+      0.07317713648080826
+    ]
+  },
+  {
+    "filename": "data\\hard_negatives\\cat\\5-214759-A-5.wav",
+    "true_label": "non_cry",
+    "predicted_label": "cry",
+    "confidence": 99.7122802734375,
+    "probabilities": [
+      0.0028771301731467247,
+      0.9971228241920471
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_ICSD\\0046015001.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 94.58892822265625,
+    "probabilities": [
+      0.9458892941474915,
+      0.05411074310541153
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_ICSD\\0002007002.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 81.77395629882812,
+    "probabilities": [
+      0.8177395462989807,
+      0.1822604387998581
+    ]
+  },
+  {
+    "filename": "data\\hard_negatives\\church_bells\\5-204741-A-46.wav",
+    "true_label": "non_cry",
+    "predicted_label": "cry",
+    "confidence": 90.99842071533203,
+    "probabilities": [
+      0.09001582860946655,
+      0.9099841713905334
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry\\7b0e160e-0505-459e-8ecb-304d7afae9d2-1437486974312-1.7-m-04-dc.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 92.91907501220703,
+    "probabilities": [
+      0.9291907548904419,
+      0.07080920785665512
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_crycaleb\\anonymous316_D_000.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 99.00021362304688,
+    "probabilities": [
+      0.9900021553039551,
+      0.009997876361012459
+    ]
+  },
+  {
+    "filename": "data\\hard_negatives\\laughing\\4-132803-A-26.wav",
+    "true_label": "non_cry",
+    "predicted_label": "cry",
+    "confidence": 99.51571655273438,
+    "probabilities": [
+      0.004842756781727076,
+      0.9951571822166443
+    ]
+  },
+  {
+    "filename": "data\\hard_negatives\\chirping_birds\\2-72547-B-14.wav",
+    "true_label": "non_cry",
+    "predicted_label": "cry",
+    "confidence": 68.10843658447266,
+    "probabilities": [
+      0.3189156949520111,
+      0.6810843348503113
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_ICSD\\strong_Infantcry_274_0753_1509.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 98.43627166748047,
+    "probabilities": [
+      0.9843627214431763,
+      0.015637321397662163
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_ICSD\\strong_Infantcry_325_7916_9225.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 99.34707641601562,
+    "probabilities": [
+      0.9934707880020142,
+      0.00652922922745347
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_crycaleb\\0173_D_015.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 98.02175903320312,
+    "probabilities": [
+      0.9802175760269165,
+      0.01978245936334133
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_crycaleb\\0176_B_018.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 98.110595703125,
+    "probabilities": [
+      0.9811059832572937,
+      0.01889406330883503
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_crycaleb\\0231_B_021.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 52.685386657714844,
+    "probabilities": [
+      0.5268538594245911,
+      0.47314611077308655
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_ICSD\\0052166000.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 98.55508422851562,
+    "probabilities": [
+      0.9855508804321289,
+      0.014449156820774078
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_crycaleb\\0734_D_000.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 94.24678039550781,
+    "probabilities": [
+      0.9424678087234497,
+      0.057532262057065964
+    ]
+  },
+  {
+    "filename": "data\\hard_negatives\\adult_speech\\speech_001376.flac",
+    "true_label": "non_cry",
+    "predicted_label": "cry",
+    "confidence": 95.8400650024414,
+    "probabilities": [
+      0.041599344462156296,
+      0.9584006667137146
+    ]
+  },
+  {
+    "filename": "data\\hard_negatives\\baby_noncry\\laugh_2.m4a_9.wav",
+    "true_label": "non_cry",
+    "predicted_label": "cry",
+    "confidence": 91.01032257080078,
+    "probabilities": [
+      0.0898967981338501,
+      0.9101032018661499
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_ICSD\\0052114000.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 75.5069351196289,
+    "probabilities": [
+      0.755069375038147,
+      0.24493062496185303
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_crycaleb\\anonymous200_D_010.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 96.70572662353516,
+    "probabilities": [
+      0.9670572876930237,
+      0.03294273093342781
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_crycaleb\\0531_B_000.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 60.248653411865234,
+    "probabilities": [
+      0.6024865508079529,
+      0.39751341938972473
+    ]
+  },
+  {
+    "filename": "data\\hard_negatives\\adult_speech\\speech_000073.flac",
+    "true_label": "non_cry",
+    "predicted_label": "cry",
+    "confidence": 78.66032409667969,
+    "probabilities": [
+      0.21339678764343262,
+      0.7866032123565674
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_ICSD\\0053036000.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 93.19416046142578,
+    "probabilities": [
+      0.9319416284561157,
+      0.06805840134620667
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_ICSD\\strong_Infantcry_7_0000_0617.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 55.743038177490234,
+    "probabilities": [
+      0.5574303865432739,
+      0.44256964325904846
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_crycaleb\\0458_D_021.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 99.18623352050781,
+    "probabilities": [
+      0.9918622970581055,
+      0.008137739263474941
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_ICSD\\0013004002.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 98.73670196533203,
+    "probabilities": [
+      0.9873670339584351,
+      0.01263301819562912
+    ]
+  },
+  {
+    "filename": "data\\hard_negatives\\door_wood_creaks\\4-128659-A-33.wav",
+    "true_label": "non_cry",
+    "predicted_label": "cry",
+    "confidence": 55.64644241333008,
+    "probabilities": [
+      0.44353553652763367,
+      0.556464433670044
+    ]
+  },
+  {
+    "filename": "data\\hard_negatives\\car_horn\\2-128465-B-43.wav",
+    "true_label": "non_cry",
+    "predicted_label": "cry",
+    "confidence": 88.36322784423828,
+    "probabilities": [
+      0.1163676455616951,
+      0.8836323022842407
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_crycaleb\\0776_B_013.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 98.06735229492188,
+    "probabilities": [
+      0.9806735515594482,
+      0.019326459616422653
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_crycaleb\\0305_D_011.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 99.20957946777344,
+    "probabilities": [
+      0.9920957684516907,
+      0.00790424644947052
+    ]
+  },
+  {
+    "filename": "data\\hard_negatives\\sea_waves\\1-43760-A-11.wav",
+    "true_label": "non_cry",
+    "predicted_label": "cry",
+    "confidence": 99.82244110107422,
+    "probabilities": [
+      0.0017756095621734858,
+      0.9982244372367859
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_ICSD\\strong_Infantcry_111_8280_8627.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 99.274169921875,
+    "probabilities": [
+      0.9927417039871216,
+      0.007258240599185228
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_ICSD\\strong_Infantcry_328_4853_6020.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 85.82655334472656,
+    "probabilities": [
+      0.8582655191421509,
+      0.1417345404624939
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry\\bp-18.3gp",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 65.4323959350586,
+    "probabilities": [
+      0.6543239951133728,
+      0.3456760346889496
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_ICSD\\0052083000.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 72.92947387695312,
+    "probabilities": [
+      0.7292947173118591,
+      0.27070528268814087
+    ]
+  },
+  {
+    "filename": "data\\hard_negatives\\adult_speech\\speech_001590.flac",
+    "true_label": "non_cry",
+    "predicted_label": "cry",
+    "confidence": 93.32455444335938,
+    "probabilities": [
+      0.06675448268651962,
+      0.9332455396652222
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_ICSD\\0052171000.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 98.83901977539062,
+    "probabilities": [
+      0.9883902072906494,
+      0.011609852313995361
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_ICSD\\0053030000.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 93.50027465820312,
+    "probabilities": [
+      0.9350027441978455,
+      0.06499731540679932
+    ]
+  },
+  {
+    "filename": "data\\hard_negatives\\baby_noncry\\freesound_18292_tebebeaif.ogg",
+    "true_label": "non_cry",
+    "predicted_label": "cry",
+    "confidence": 81.91788482666016,
+    "probabilities": [
+      0.18082116544246674,
+      0.8191788196563721
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_ICSD\\strong_Infantcry_398_7150_10000.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 99.1580581665039,
+    "probabilities": [
+      0.9915805459022522,
+      0.008419432677328587
+    ]
+  },
+  {
+    "filename": "data\\hard_negatives\\adult_speech\\speech_001386.flac",
+    "true_label": "non_cry",
+    "predicted_label": "cry",
+    "confidence": 96.89111328125,
+    "probabilities": [
+      0.031088901683688164,
+      0.9689111709594727
+    ]
+  },
+  {
+    "filename": "data\\hard_negatives\\adult_speech\\speech_003968.flac",
+    "true_label": "non_cry",
+    "predicted_label": "cry",
+    "confidence": 94.33050537109375,
+    "probabilities": [
+      0.05669490247964859,
+      0.9433050155639648
+    ]
+  },
+  {
+    "filename": "data\\hard_negatives\\relabeled\\relabeled_from_cry_3d3e244d-20b1-4ec3-9732-92dcd14ff35a-1436961241219-1.7-m-72-hu.wav",
+    "true_label": "non_cry",
+    "predicted_label": "cry",
+    "confidence": 99.02572631835938,
+    "probabilities": [
+      0.009742764756083488,
+      0.9902572631835938
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_ICSD\\strong_Infantcry_374_4464_5107.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 61.45942687988281,
+    "probabilities": [
+      0.6145942807197571,
+      0.3854057490825653
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_crycaleb\\anonymous015_B_002.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 64.4476547241211,
+    "probabilities": [
+      0.6444765329360962,
+      0.3555234670639038
+    ]
+  },
+  {
+    "filename": "data\\hard_negatives\\adult_speech\\speech_003633.flac",
+    "true_label": "non_cry",
+    "predicted_label": "cry",
+    "confidence": 56.197994232177734,
+    "probabilities": [
+      0.4380200505256653,
+      0.5619799494743347
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry\\719bb382-a592-46b7-82d2-8b4a625263b7-1430376267895-1.7-m-48-hu.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 97.79325866699219,
+    "probabilities": [
+      0.9779325723648071,
+      0.022067386656999588
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_ICSD\\strong_Infantcry_320_8153_9542.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 81.54833221435547,
+    "probabilities": [
+      0.8154833316802979,
+      0.18451663851737976
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_crycaleb\\anonymous238_D_000.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 98.51976013183594,
+    "probabilities": [
+      0.9851976037025452,
+      0.014802436344325542
+    ]
+  },
+  {
+    "filename": "data\\hard_negatives\\sneezing\\4-171519-A-21.wav",
+    "true_label": "non_cry",
+    "predicted_label": "cry",
+    "confidence": 94.93203735351562,
+    "probabilities": [
+      0.050679583102464676,
+      0.949320375919342
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_ICSD\\0052331000.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 92.24256134033203,
+    "probabilities": [
+      0.9224256277084351,
+      0.07757432758808136
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_crycaleb\\0330_D_000.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 99.31446075439453,
+    "probabilities": [
+      0.9931446313858032,
+      0.006855360697954893
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry\\generated2_d6cda191-4962-4308-9a36-46d5648a95ed-1431700349754-1.7-m-04-sc.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 59.259490966796875,
+    "probabilities": [
+      0.5925949215888977,
+      0.4074051082134247
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_ICSD\\0074029002.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 98.99500274658203,
+    "probabilities": [
+      0.9899500608444214,
+      0.0100499102845788
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_crycaleb\\0480_B_006.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 98.29192352294922,
+    "probabilities": [
+      0.9829192161560059,
+      0.017080795019865036
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_ICSD\\strong_Infantcry_226_1752_2759.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 64.92607116699219,
+    "probabilities": [
+      0.6492606997489929,
+      0.35073933005332947
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_ICSD\\0076008001.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 98.45855712890625,
+    "probabilities": [
+      0.9845855832099915,
+      0.015414386987686157
+    ]
+  },
+  {
+    "filename": "data\\hard_negatives\\footsteps\\1-155858-D-25.wav",
+    "true_label": "non_cry",
+    "predicted_label": "cry",
+    "confidence": 99.81900787353516,
+    "probabilities": [
+      0.0018098941072821617,
+      0.9981901049613953
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_crycaleb\\0592_D_005.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 71.9098892211914,
+    "probabilities": [
+      0.7190988659858704,
+      0.280901163816452
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_ICSD\\0019003002.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 89.85832214355469,
+    "probabilities": [
+      0.8985832333564758,
+      0.10141678154468536
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_ICSD\\0001004002.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 97.46710968017578,
+    "probabilities": [
+      0.9746710658073425,
+      0.025328880175948143
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_crycaleb\\0638_B_022.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 92.5195541381836,
+    "probabilities": [
+      0.9251955151557922,
+      0.07480452209711075
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_ICSD\\strong_Infantcry_89_1012_2053.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 91.79813385009766,
+    "probabilities": [
+      0.9179813265800476,
+      0.08201861381530762
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry\\7b0e160e-0505-459e-8ecb-304d7afae9d2-1437486941311-1.7-m-04-hu.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 97.27098083496094,
+    "probabilities": [
+      0.9727098345756531,
+      0.027290161699056625
+    ]
+  },
+  {
+    "filename": "data\\hard_negatives\\adult_shout\\813305_WilhelmScreamAlternative3.mp3",
+    "true_label": "non_cry",
+    "predicted_label": "cry",
+    "confidence": 98.1523666381836,
+    "probabilities": [
+      0.018476275727152824,
+      0.9815236926078796
+    ]
+  },
+  {
+    "filename": "data\\hard_negatives\\adult_speech\\speech_004252.flac",
+    "true_label": "non_cry",
+    "predicted_label": "cry",
+    "confidence": 99.838134765625,
+    "probabilities": [
+      0.0016186723951250315,
+      0.9983813762664795
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry\\92d08bbe-553f-4844-85b1-15d572f06ea2-1436873211119-1.7-m-04-hu.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 99.33680725097656,
+    "probabilities": [
+      0.9933680891990662,
+      0.006631914526224136
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_crycaleb\\anonymous249_D_025.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 93.15167999267578,
+    "probabilities": [
+      0.9315168261528015,
+      0.06848321855068207
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_ICSD\\strong_Infantcry_372_0386_1402.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 83.47518920898438,
+    "probabilities": [
+      0.8347519040107727,
+      0.16524812579154968
+    ]
+  },
+  {
+    "filename": "data\\hard_negatives\\coughing\\2-87794-A-24.wav",
+    "true_label": "non_cry",
+    "predicted_label": "cry",
+    "confidence": 64.89018249511719,
+    "probabilities": [
+      0.3510981500148773,
+      0.6489018201828003
+    ]
+  },
+  {
+    "filename": "data\\hard_negatives\\baby_noncry\\freesound_240827_marvie_baaaa_01flac.ogg",
+    "true_label": "non_cry",
+    "predicted_label": "cry",
+    "confidence": 99.5862808227539,
+    "probabilities": [
+      0.004137139767408371,
+      0.9958628416061401
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_crycaleb\\0240_D_000.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 98.33500671386719,
+    "probabilities": [
+      0.9833500385284424,
+      0.016649965196847916
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_ICSD\\strong_Infantcry_323_7161_7477.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 74.84890747070312,
+    "probabilities": [
+      0.7484890818595886,
+      0.25151094794273376
+    ]
+  },
+  {
+    "filename": "data\\hard_negatives\\pig\\1-208757-B-2.wav",
+    "true_label": "non_cry",
+    "predicted_label": "cry",
+    "confidence": 94.36653900146484,
+    "probabilities": [
+      0.05633458495140076,
+      0.9436653852462769
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_crycaleb\\0157_B_000.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 92.09857940673828,
+    "probabilities": [
+      0.9209858179092407,
+      0.07901418954133987
+    ]
+  },
+  {
+    "filename": "data\\hard_negatives\\airplane\\4-161100-A-47.wav",
+    "true_label": "non_cry",
+    "predicted_label": "cry",
+    "confidence": 99.85911560058594,
+    "probabilities": [
+      0.0014088267926126719,
+      0.9985911250114441
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry\\F2F97740-D638-4B6F-9E09-3AC65F06B448-1436849335-1.1-f-48-hu.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 85.39698028564453,
+    "probabilities": [
+      0.8539698123931885,
+      0.14603014290332794
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_crycaleb\\anonymous083_B_004.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 55.755638122558594,
+    "probabilities": [
+      0.5575563907623291,
+      0.4424435794353485
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_ICSD\\strong_Infantcry_14_8375_8820.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 98.7582778930664,
+    "probabilities": [
+      0.9875827431678772,
+      0.012417257763445377
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_crycaleb\\anonymous178_D_000.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 97.42658996582031,
+    "probabilities": [
+      0.9742659330368042,
+      0.02573406510055065
+    ]
+  },
+  {
+    "filename": "data\\hard_negatives\\church_bells\\1-40154-A-46.wav",
+    "true_label": "non_cry",
+    "predicted_label": "cry",
+    "confidence": 55.232574462890625,
+    "probabilities": [
+      0.4476742446422577,
+      0.5523257255554199
+    ]
+  },
+  {
+    "filename": "data\\hard_negatives\\wind\\4-144085-A-16.wav",
+    "true_label": "non_cry",
+    "predicted_label": "cry",
+    "confidence": 65.96615600585938,
+    "probabilities": [
+      0.3403385281562805,
+      0.6596615314483643
+    ]
+  },
+  {
+    "filename": "data\\hard_negatives\\adult_scream\\219663_high-pitchedscream.wav.mp3",
+    "true_label": "non_cry",
+    "predicted_label": "cry",
+    "confidence": 64.0562744140625,
+    "probabilities": [
+      0.35943716764450073,
+      0.6405627727508545
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_crycaleb\\0148_B_004.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 96.78961944580078,
+    "probabilities": [
+      0.9678961634635925,
+      0.03210387006402016
+    ]
+  },
+  {
+    "filename": "data\\hard_negatives\\car_horn\\1-26177-A-43.wav",
+    "true_label": "non_cry",
+    "predicted_label": "cry",
+    "confidence": 78.3255386352539,
+    "probabilities": [
+      0.21674461662769318,
+      0.783255398273468
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_ICSD\\0052126000.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 87.22453308105469,
+    "probabilities": [
+      0.8722453117370605,
+      0.12775468826293945
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_crycaleb\\0850_B_003.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 98.89551544189453,
+    "probabilities": [
+      0.9889551401138306,
+      0.01104493997991085
+    ]
+  },
+  {
+    "filename": "data\\hard_negatives\\pouring_water\\5-205589-B-17.wav",
+    "true_label": "non_cry",
+    "predicted_label": "cry",
+    "confidence": 54.82044219970703,
+    "probabilities": [
+      0.4517955780029297,
+      0.5482044219970703
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_crycaleb\\0305_D_003.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 78.50011444091797,
+    "probabilities": [
+      0.7850011587142944,
+      0.21499885618686676
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_ICSD\\strong_Infantcry_350_0000_0544.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 86.19364166259766,
+    "probabilities": [
+      0.8619363903999329,
+      0.13806357979774475
+    ]
+  },
+  {
+    "filename": "data\\hard_negatives\\baby_noncry\\freesound_416690_Baby Language - Ha-Ha Monkeywav.ogg",
+    "true_label": "non_cry",
+    "predicted_label": "cry",
+    "confidence": 78.28459167480469,
+    "probabilities": [
+      0.2171541005373001,
+      0.7828459143638611
+    ]
+  },
+  {
+    "filename": "data\\hard_negatives\\pouring_water\\2-102414-B-17.wav",
+    "true_label": "non_cry",
+    "predicted_label": "cry",
+    "confidence": 70.06937408447266,
+    "probabilities": [
+      0.2993062734603882,
+      0.7006937265396118
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_ICSD\\strong_Infantcry_295_5493_5824.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 99.25860595703125,
+    "probabilities": [
+      0.992586076259613,
+      0.007413926068693399
+    ]
+  },
+  {
+    "filename": "data\\hard_negatives\\water_drops\\2-139748-B-15.wav",
+    "true_label": "non_cry",
+    "predicted_label": "cry",
+    "confidence": 98.75251007080078,
+    "probabilities": [
+      0.012474953196942806,
+      0.9875251054763794
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_ICSD\\0074027002.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 99.11186981201172,
+    "probabilities": [
+      0.9911187291145325,
+      0.008881314657628536
+    ]
+  },
+  {
+    "filename": "data\\hard_negatives\\adult_speech\\speech_000530.flac",
+    "true_label": "non_cry",
+    "predicted_label": "cry",
+    "confidence": 78.83529663085938,
+    "probabilities": [
+      0.21164698898792267,
+      0.7883529663085938
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_crycaleb\\0586_D_003.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 86.65582275390625,
+    "probabilities": [
+      0.8665582537651062,
+      0.13344179093837738
+    ]
+  },
+  {
+    "filename": "data\\hard_negatives\\hen\\1-72229-B-6.wav",
+    "true_label": "non_cry",
+    "predicted_label": "cry",
+    "confidence": 55.17138671875,
+    "probabilities": [
+      0.44828611612319946,
+      0.5517138838768005
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_ICSD\\0051003001.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 67.16423797607422,
+    "probabilities": [
+      0.6716423630714417,
+      0.32835763692855835
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry\\9CFD61B9-BF13-406D-8B2F-F73CFAAF25CB-1430927704-1.0-f-04-hu.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 95.11259460449219,
+    "probabilities": [
+      0.951125979423523,
+      0.04887396842241287
+    ]
+  },
+  {
+    "filename": "data\\hard_negatives\\adult_speech\\speech_002497.flac",
+    "true_label": "non_cry",
+    "predicted_label": "cry",
+    "confidence": 99.71713256835938,
+    "probabilities": [
+      0.002828675089403987,
+      0.9971713423728943
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_ICSD\\0036005001.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 94.22074127197266,
+    "probabilities": [
+      0.942207396030426,
+      0.05779261142015457
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry\\42ec6f14-6ba6-457f-8a80-101ee201195c-1431344963681-1.7-m-22-dk.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 99.2571792602539,
+    "probabilities": [
+      0.9925717711448669,
+      0.007428256329149008
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry\\1-211527-B.ogg",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 98.92933654785156,
+    "probabilities": [
+      0.9892933368682861,
+      0.010706644505262375
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_ICSD\\0041016001.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 51.81944274902344,
+    "probabilities": [
+      0.5181944370269775,
+      0.4818055331707001
+    ]
+  },
+  {
+    "filename": "data\\hard_negatives\\pig\\1-208757-B-2.wav",
+    "true_label": "non_cry",
+    "predicted_label": "cry",
+    "confidence": 94.39640045166016,
+    "probabilities": [
+      0.05603603273630142,
+      0.9439640045166016
+    ]
+  },
+  {
+    "filename": "data\\hard_negatives\\cat\\5-214759-B-5.wav",
+    "true_label": "non_cry",
+    "predicted_label": "cry",
+    "confidence": 66.59281921386719,
+    "probabilities": [
+      0.3340718746185303,
+      0.6659281849861145
+    ]
+  },
+  {
+    "filename": "data\\hard_negatives\\brushing_teeth\\2-92627-A-27.wav",
+    "true_label": "non_cry",
+    "predicted_label": "cry",
+    "confidence": 53.28578186035156,
+    "probabilities": [
+      0.46714213490486145,
+      0.5328578352928162
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_ICSD\\0081002001.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 98.86457061767578,
+    "probabilities": [
+      0.9886456727981567,
+      0.01135432068258524
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_crycaleb\\0127_D_015.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 69.14468383789062,
+    "probabilities": [
+      0.691446840763092,
+      0.30855312943458557
+    ]
+  },
+  {
+    "filename": "data\\hard_negatives\\baby_noncry\\freesound_139044_Babbling - Aghh 2.ogg",
+    "true_label": "non_cry",
+    "predicted_label": "cry",
+    "confidence": 99.73834228515625,
+    "probabilities": [
+      0.002616552170366049,
+      0.9973834156990051
+    ]
+  },
+  {
+    "filename": "data\\hard_negatives\\adult_scream\\222541_WOMANSCREAM.mp3",
+    "true_label": "non_cry",
+    "predicted_label": "cry",
+    "confidence": 90.69640350341797,
+    "probabilities": [
+      0.0930359810590744,
+      0.9069640040397644
+    ]
+  },
+  {
+    "filename": "data\\hard_negatives\\insects\\5-233787-A-7.wav",
+    "true_label": "non_cry",
+    "predicted_label": "cry",
+    "confidence": 89.56681060791016,
+    "probabilities": [
+      0.10433193296194077,
+      0.895668089389801
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_ICSD\\strong_Infantcry_147_8862_9672.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 72.91944122314453,
+    "probabilities": [
+      0.7291944026947021,
+      0.27080559730529785
+    ]
+  },
+  {
+    "filename": "data\\hard_negatives\\adult_speech\\speech_001586.flac",
+    "true_label": "non_cry",
+    "predicted_label": "cry",
+    "confidence": 62.58732604980469,
+    "probabilities": [
+      0.37412670254707336,
+      0.6258732676506042
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_ICSD\\0077009001.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 96.26573944091797,
+    "probabilities": [
+      0.9626573920249939,
+      0.037342581897974014
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_ICSD\\0036005001.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 94.45785522460938,
+    "probabilities": [
+      0.9445785880088806,
+      0.055421341210603714
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry\\80130d3a-ceb9-4460-8464-e956bac5c40d-1436850066096-1.7-m-72-dk.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 98.16462707519531,
+    "probabilities": [
+      0.9816462397575378,
+      0.01835380308330059
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_crycaleb\\anonymous138_B_023.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 69.479248046875,
+    "probabilities": [
+      0.6947925090789795,
+      0.3052074909210205
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_crycaleb\\0433_D_012.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 97.44367218017578,
+    "probabilities": [
+      0.9744367003440857,
+      0.025563271716237068
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_ICSD\\strong_Infantcry_167_7466_8372.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 67.38356018066406,
+    "probabilities": [
+      0.6738355755805969,
+      0.3261644244194031
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_crycaleb\\0127_D_010.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 79.52739715576172,
+    "probabilities": [
+      0.7952739596366882,
+      0.20472599565982819
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_crycaleb\\0104_B_000.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 91.31339263916016,
+    "probabilities": [
+      0.9131339192390442,
+      0.086866095662117
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_crycaleb\\0667_D_009.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 72.60038757324219,
+    "probabilities": [
+      0.726003885269165,
+      0.27399614453315735
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_crycaleb\\0592_D_005.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 97.41141510009766,
+    "probabilities": [
+      0.9741141200065613,
+      0.025885943323373795
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_ICSD\\0039002001.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 59.025489807128906,
+    "probabilities": [
+      0.5902549028396606,
+      0.40974512696266174
+    ]
+  },
+  {
+    "filename": "data\\hard_negatives\\church_bells\\1-13572-A-46.wav",
+    "true_label": "non_cry",
+    "predicted_label": "cry",
+    "confidence": 81.06990814208984,
+    "probabilities": [
+      0.18930098414421082,
+      0.8106990456581116
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_ICSD\\strong_Infantcry_393_2032_2494.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 99.32816314697266,
+    "probabilities": [
+      0.9932816028594971,
+      0.006718425080180168
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_ICSD\\0053030000.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 92.16622161865234,
+    "probabilities": [
+      0.9216622114181519,
+      0.07833784073591232
+    ]
+  },
+  {
+    "filename": "data\\hard_negatives\\rooster\\3-137152-A-1.wav",
+    "true_label": "non_cry",
+    "predicted_label": "cry",
+    "confidence": 99.34366607666016,
+    "probabilities": [
+      0.006563366390764713,
+      0.9934366345405579
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_crycaleb\\0281_D_005.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 98.15829467773438,
+    "probabilities": [
+      0.9815829396247864,
+      0.018416984006762505
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_crycaleb\\0881_D_005.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 87.87651824951172,
+    "probabilities": [
+      0.8787651658058167,
+      0.12123484909534454
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_ICSD\\0070026000.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 51.5444450378418,
+    "probabilities": [
+      0.5154444575309753,
+      0.48455554246902466
+    ]
+  },
+  {
+    "filename": "data\\hard_negatives\\baby_noncry\\freesound_416674_Baby Gibberish 28wav.ogg",
+    "true_label": "non_cry",
+    "predicted_label": "cry",
+    "confidence": 91.46128845214844,
+    "probabilities": [
+      0.08538717776536942,
+      0.914612889289856
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_ICSD\\strong_Infantcry_247_0480_1976.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 87.09423065185547,
+    "probabilities": [
+      0.8709422945976257,
+      0.12905772030353546
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry\\4-167077-A.ogg",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 99.32850646972656,
+    "probabilities": [
+      0.993285059928894,
+      0.006714918650686741
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_crycaleb\\0321_D_000.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 96.68356323242188,
+    "probabilities": [
+      0.966835618019104,
+      0.03316440060734749
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry\\79FF400A-97E2-4701-987D-C7C850D5523C-1430089487-1.0-f-48-ti.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 74.44799041748047,
+    "probabilities": [
+      0.7444798946380615,
+      0.2555201053619385
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_ICSD\\0076002001.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 55.88300704956055,
+    "probabilities": [
+      0.5588300824165344,
+      0.4411699175834656
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_crycaleb\\0061_B_000.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 96.5333023071289,
+    "probabilities": [
+      0.9653330445289612,
+      0.034666985273361206
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_ICSD\\0041001001.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 92.81977081298828,
+    "probabilities": [
+      0.9281976819038391,
+      0.07180227339267731
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_ICSD\\strong_Infantcry_304_5204_7146.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 98.42245483398438,
+    "probabilities": [
+      0.9842245578765869,
+      0.015775401145219803
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_ICSD\\strong_Infantcry_398_7150_10000.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 97.31147003173828,
+    "probabilities": [
+      0.9731147289276123,
+      0.02688530646264553
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_ICSD\\0083024001.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 53.86661911010742,
+    "probabilities": [
+      0.5386661887168884,
+      0.4613338112831116
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_ICSD\\strong_Infantcry_56_6396_7780.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 97.91720581054688,
+    "probabilities": [
+      0.9791720509529114,
+      0.02082797698676586
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_crycaleb\\0182_B_016.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 79.22975158691406,
+    "probabilities": [
+      0.7922974824905396,
+      0.20770251750946045
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_ICSD\\strong_Infantcry_413_9140_9991.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 98.64534759521484,
+    "probabilities": [
+      0.9864534735679626,
+      0.013546471484005451
+    ]
+  },
+  {
+    "filename": "data\\hard_negatives\\door_wood_creaks\\5-173568-A-33.wav",
+    "true_label": "non_cry",
+    "predicted_label": "cry",
+    "confidence": 90.13150787353516,
+    "probabilities": [
+      0.09868486225605011,
+      0.9013150930404663
+    ]
+  },
+  {
+    "filename": "data\\hard_negatives\\adult_scream\\219693_woman-screaming.wav.mp3",
+    "true_label": "non_cry",
+    "predicted_label": "cry",
+    "confidence": 56.25727844238281,
+    "probabilities": [
+      0.43742722272872925,
+      0.5625727772712708
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_crycaleb\\0157_B_000.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 89.10673522949219,
+    "probabilities": [
+      0.891067385673523,
+      0.10893259197473526
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_ICSD\\0083018001.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 99.13382720947266,
+    "probabilities": [
+      0.9913382530212402,
+      0.008661807514727116
+    ]
+  },
+  {
+    "filename": "data\\hard_negatives\\pouring_water\\1-51436-A-17.wav",
+    "true_label": "non_cry",
+    "predicted_label": "cry",
+    "confidence": 59.810089111328125,
+    "probabilities": [
+      0.4018990993499756,
+      0.5981009006500244
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_crycaleb\\0647_D_010.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 53.42981719970703,
+    "probabilities": [
+      0.5342981815338135,
+      0.4657018184661865
+    ]
+  },
+  {
+    "filename": "data\\hard_negatives\\relabeled\\relabeled_from_cry_665BDF6D-2897-49F9-8AD0-978B3B2A0468-1430530218-1.0-m-26-dc.wav",
+    "true_label": "non_cry",
+    "predicted_label": "cry",
+    "confidence": 81.35362243652344,
+    "probabilities": [
+      0.18646375834941864,
+      0.8135362267494202
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_crycaleb\\0088_B_011.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 98.03826904296875,
+    "probabilities": [
+      0.9803826808929443,
+      0.01961737871170044
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_ICSD\\strong_Infantcry_374_4464_5107.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 66.36859893798828,
+    "probabilities": [
+      0.6636859774589539,
+      0.33631399273872375
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_crycaleb\\0951_B_015.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 98.42762756347656,
+    "probabilities": [
+      0.984276294708252,
+      0.01572372578084469
+    ]
+  },
+  {
+    "filename": "data\\hard_negatives\\child_tantrum\\459123_yell.mp3.mp3",
+    "true_label": "non_cry",
+    "predicted_label": "cry",
+    "confidence": 51.04198455810547,
+    "probabilities": [
+      0.4895801544189453,
+      0.5104198455810547
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_crycaleb\\0569_B_018.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 91.16830444335938,
+    "probabilities": [
+      0.9116830229759216,
+      0.08831700682640076
+    ]
+  },
+  {
+    "filename": "data\\hard_negatives\\rooster\\1-27724-A-1.wav",
+    "true_label": "non_cry",
+    "predicted_label": "cry",
+    "confidence": 96.58361053466797,
+    "probabilities": [
+      0.03416389226913452,
+      0.9658361077308655
+    ]
+  },
+  {
+    "filename": "data\\hard_negatives\\hen\\3-164216-C-6.wav",
+    "true_label": "non_cry",
+    "predicted_label": "cry",
+    "confidence": 79.69593811035156,
+    "probabilities": [
+      0.20304065942764282,
+      0.796959400177002
+    ]
+  },
+  {
+    "filename": "data\\hard_negatives\\baby_noncry\\laugh_2.m4a_19.wav",
+    "true_label": "non_cry",
+    "predicted_label": "cry",
+    "confidence": 68.62545776367188,
+    "probabilities": [
+      0.3137454390525818,
+      0.6862545609474182
+    ]
+  },
+  {
+    "filename": "data\\hard_negatives\\pig\\5-103416-A-2.wav",
+    "true_label": "non_cry",
+    "predicted_label": "cry",
+    "confidence": 99.54290771484375,
+    "probabilities": [
+      0.004570999648422003,
+      0.9954290390014648
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_ICSD\\0052034000.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 98.1453628540039,
+    "probabilities": [
+      0.9814536571502686,
+      0.018546320497989655
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_ICSD\\0037008001.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 60.82188034057617,
+    "probabilities": [
+      0.608218789100647,
+      0.39178118109703064
+    ]
+  },
+  {
+    "filename": "data\\hard_negatives\\brushing_teeth\\5-220939-A-27.wav",
+    "true_label": "non_cry",
+    "predicted_label": "cry",
+    "confidence": 95.0309829711914,
+    "probabilities": [
+      0.049690231680870056,
+      0.9503098130226135
+    ]
+  },
+  {
+    "filename": "data\\hard_negatives\\adult_speech\\speech_004148.flac",
+    "true_label": "non_cry",
+    "predicted_label": "cry",
+    "confidence": 89.42898559570312,
+    "probabilities": [
+      0.10571014881134033,
+      0.8942898511886597
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_crycaleb\\anonymous084_B_000.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 98.38378143310547,
+    "probabilities": [
+      0.9838378429412842,
+      0.016162073239684105
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_crycaleb\\0414_D_013.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 96.10049438476562,
+    "probabilities": [
+      0.961004912853241,
+      0.03899509459733963
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry_ICSD\\0035005001.wav",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 98.53414916992188,
+    "probabilities": [
+      0.985341489315033,
+      0.014658557251095772
+    ]
+  },
+  {
+    "filename": "data\\hard_negatives\\toilet_flush\\1-56269-A-18.wav",
+    "true_label": "non_cry",
+    "predicted_label": "cry",
+    "confidence": 86.09431457519531,
+    "probabilities": [
+      0.13905683159828186,
+      0.8609431385993958
+    ]
+  },
+  {
+    "filename": "data\\hard_negatives\\adult_speech\\speech_001623.flac",
+    "true_label": "non_cry",
+    "predicted_label": "cry",
+    "confidence": 59.55119705200195,
+    "probabilities": [
+      0.4044880270957947,
+      0.5955119729042053
+    ]
+  },
+  {
+    "filename": "data\\cry_baby\\cry\\1-22694-B.ogg",
+    "true_label": "cry",
+    "predicted_label": "non_cry",
+    "confidence": 88.41699981689453,
+    "probabilities": [
+      0.8841699957847595,
+      0.1158299669623375
+    ]
+  }
+]

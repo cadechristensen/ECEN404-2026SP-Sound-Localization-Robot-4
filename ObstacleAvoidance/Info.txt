@@ -1,0 +1,17 @@
+1. ESP32 → Pi: "LISTEN"
+   (I'm ready for a command)
+
+2. Pi: Detects sound, gets direction vector
+   X=-0.14, Y=0.36
+
+3. Pi: Decides Y > X, so send forward command
+   Pi → ESP32: "FORWARD 0.36"
+
+4. ESP32: Moves forward for (0.36 * 3.0) = 1.08 seconds
+   While avoiding obstacles
+
+5. ESP32 → Pi: "DONE"
+   (Movement complete)
+
+6. ESP32 → Pi: "LISTEN"
+   (Ready for next sound)
