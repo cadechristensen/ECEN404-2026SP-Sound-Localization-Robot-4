@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "905768883769",
+    "project_id": "ecen-404-capstone",
+    "storage_bucket": "ecen-404-capstone.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:905768883769:android:61dec44592e143a23f9fe8",
+        "android_client_info": {
+          "package_name": "com.example.capstone403"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDgRjsJMFNFcQHCgVvUNuihPzmo7sEMES4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

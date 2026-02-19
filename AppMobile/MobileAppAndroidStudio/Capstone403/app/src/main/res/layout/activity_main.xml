@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="8dp">
+
+    <EditText
+        android:id="@+id/ipInput"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Server IP (e.g. 192.168.1.50)" />
+
+    <Button
+        android:id="@+id/btnConnect"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Connect" />
+
+    <Switch
+        android:id="@+id/switchPolling"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Notify when robot is online" />
+
+    <WebView
+        android:id="@+id/webView"
+        android:layout_width="387dp"
+        android:layout_height="557dp"
+        android:layout_weight="1" />
+
+
+</LinearLayout>
