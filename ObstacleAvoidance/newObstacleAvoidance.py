@@ -1,8 +1,6 @@
 from machine import Pin, PWM, time_pulse_us, UART
 import time
 from time import ticks_us, ticks_diff, sleep_ms
-import math
-
 print("Starting 3-Sensor Obstacle Avoidance + Sound Navigation")
 
 # =============================================================================
@@ -22,21 +20,21 @@ def pulse_us_to_duty(us):
     return int(us / 20000 * 65535)
 
 # --- Duty values (microseconds) ---
-STOP_LEFT_US     = 1480
+STOP_LEFT_US     = 1460
 STOP_RIGHT_US    = 1230
 
-FORWARD_LEFT_US  = 1200
-FORWARD_RIGHT_US = 1080
+FORWARD_LEFT_US  = 1600
+FORWARD_RIGHT_US = 1440
 
-# Turn RIGHT: left wheel forward, right wheel back
-TURN_RIGHT_LEFT_US  = 1200   # left  motor duty while turning right
-TURN_RIGHT_RIGHT_US = 1400   # right motor duty while turning right
-TURN_RIGHT_DURATION = 0.62   # seconds for a 90° right turn
+# Turn RIGHT: left wheel forward, right wheel backward
+TURN_RIGHT_LEFT_US  = 1600
+TURN_RIGHT_RIGHT_US = 1050
+TURN_RIGHT_DURATION = 1.24   # seconds for a 90° right turn (0.62 * 2)
 
-# Turn LEFT: left wheel back, right wheel forward
-TURN_LEFT_LEFT_US  = 1600    # left  motor duty while turning left
-TURN_LEFT_RIGHT_US = 1080    # right motor duty while turning left
-TURN_LEFT_DURATION = 0.65    # seconds for a 90° left turn
+# Turn LEFT: left wheel backward, right wheel forward
+TURN_LEFT_LEFT_US  = 1050
+TURN_LEFT_RIGHT_US = 1700
+TURN_LEFT_DURATION = 1.46    # seconds for a 90° left turn (0.73 * 2)
 
 def stop():
     motor_left.duty_u16(pulse_us_to_duty(STOP_LEFT_US))
@@ -47,25 +45,23 @@ def forward():
     motor_right.duty_u16(pulse_us_to_duty(FORWARD_RIGHT_US))
 
 def _turn_right_raw():
-    """Spin motors for a right turn — caller controls timing."""
     motor_left.duty_u16(pulse_us_to_duty(TURN_RIGHT_LEFT_US))
     motor_right.duty_u16(pulse_us_to_duty(TURN_RIGHT_RIGHT_US))
 
 def _turn_left_raw():
-    """Spin motors for a left turn — caller controls timing."""
     motor_left.duty_u16(pulse_us_to_duty(TURN_LEFT_LEFT_US))
     motor_right.duty_u16(pulse_us_to_duty(TURN_LEFT_RIGHT_US))
 
 # =============================================================================
-# ENCODER SETUP  (distance tracking only — no turn counting)
+# ENCODER SETUP (distance tracking only)
 # =============================================================================
-ENCODER_PIN   = 34
+ENCODER_PIN     = 34
 COUNTS_PER_42CM = 12
-DIST_PER_COUNT  = 0.42 / COUNTS_PER_42CM   # metres per encoder count ≈ 0.035 m
+DIST_PER_COUNT  = 0.42 / COUNTS_PER_42CM   # ~0.035 m per count
 
-count         = 0
-last_time_us  = 0
-DEBOUNCE_US   = 50000
+count        = 0
+last_time_us = 0
+DEBOUNCE_US  = 50000
 
 def encoder_isr(pin):
     global count, last_time_us
@@ -78,6 +74,11 @@ enc = Pin(ENCODER_PIN, Pin.IN)
 enc.irq(trigger=Pin.IRQ_FALLING, handler=encoder_isr)
 
 # =============================================================================
+# SENSOR FLAG — set False if sensors not plugged in
+# =============================================================================
+SENSORS_ENABLED = False
+
+# =============================================================================
 # UNIT CONVERSION
 # =============================================================================
 FT_TO_M = 0.3048
@@ -88,15 +89,17 @@ def feet_to_meters(ft):
 # =============================================================================
 # NAVIGATION PARAMETERS
 # =============================================================================
-ARRIVAL_THRESHOLD = 0.5      # metres — stop this close to the target
+ARRIVAL_THRESHOLD = 0.5      # metres
+HEADING_OFFSET    = 0        # degrees — adjust if mic array is offset from robot forward
+DRIVE_TIMEOUT_MS  = 30000    # max drive time before stall assumed (30s)
 
 nav_active           = False
 nav_dir              = None
-nav_distance_m       = 0.0    # target distance in metres (converted from ft)
+nav_distance_m       = 0.0
 nav_start_count      = 0
-distance_travelled   = 0.0    # metres covered since last nav command
+distance_travelled   = 0.0
 obstacle_encountered = False
-nav_angle            = 0.0    # bearing to sound source (degrees)
+nav_angle            = 0.0
 
 # =============================================================================
 # ULTRASONIC SENSORS
@@ -138,6 +141,8 @@ def get_distance(sensor, samples=3):
     return 400
 
 def read_distances():
+    if not SENSORS_ENABLED:
+        return {"front": 400, "left": 400, "right": 400}
     return {k: get_distance(v) for k, v in ultra.items()}
 
 # =============================================================================
@@ -145,12 +150,6 @@ def read_distances():
 # =============================================================================
 SAFE_FRONT = 50   # cm
 SAFE_SIDE  = 75   # cm
-
-# FSM STATES
-GO_STRAIGHT  = 0
-FOLLOW_LEFT  = 1
-FOLLOW_RIGHT = 2
-state = GO_STRAIGHT
 
 # =============================================================================
 # STARTUP
@@ -171,54 +170,53 @@ def parse_uart():
     global obstacle_encountered, nav_angle, distance_travelled
 
     if uart.any():
-        msg = uart.readline().decode().strip()
+        raw = uart.readline()
+        if raw is None:
+            return
+        try:
+            msg = raw.decode().strip()
+        except (UnicodeError, ValueError):
+            print("UART: bad bytes, skipping")
+            return
         print("UART RX:", msg)
 
         if msg.startswith("NAV"):
-            # Expected format: "NAV x=-1.234 y=2.345 d=3.456"
-            # Distance 'd' is assumed to be in FEET — converted to metres here
-            parts = msg.split()
-            x   = float(parts[1].split("=")[1])
-            y   = float(parts[2].split("=")[1])
-            d_ft = float(parts[3].split("=")[1])
+            try:
+                # Expected format: "NAV x=-1.234 y=2.345 d=3.456"
+                # x = angle in degrees, d = distance in feet
+                parts = msg.split()
+                x    = float(parts[1].split("=")[1])
+                d_ft = float(parts[3].split("=")[1])
 
-            nav_distance_m = feet_to_meters(y)
-            nav_angle      = x   # signed degrees
-            nav_dir        = ("FORWARD" if abs(nav_angle) < 5
-                              else ("RIGHT" if nav_angle > 0 else "LEFT"))
+                nav_distance_m = feet_to_meters(d_ft)
+                nav_angle      = x + HEADING_OFFSET
+                if nav_angle > 180:
+                    nav_angle -= 360
+                elif nav_angle < -180:
+                    nav_angle += 360
+                nav_dir        = ("FORWARD" if abs(nav_angle) < 5
+                                  else ("RIGHT" if nav_angle > 0 else "LEFT"))
 
-            # Reset tracking for fresh run
-            nav_start_count      = count
-            distance_travelled   = 0.0
-            obstacle_encountered = False
-            nav_active           = True
+                nav_start_count      = count
+                distance_travelled   = 0.0
+                obstacle_encountered = False
+                nav_active           = True
 
-            print(f"NAV cmd  → d={d_ft:.2f} ft ({nav_distance_m:.2f} m), "
-                  f"angle={nav_angle:.1f}°, dir={nav_dir}")
-
-# =============================================================================
-# HELPER — MOVE DISTANCE (encoder-based)
-# =============================================================================
-def move_distance(target_m, motion_fn=forward):
-    """Drive until encoder counts cover target_m metres, then stop."""
-    global distance_travelled
-    start = count
-    target_counts = round(target_m / DIST_PER_COUNT)
-    motion_fn()
-    while (count - start) < target_counts:
-        sleep_ms(2)
-    stop()
-    distance_travelled += target_m
+                print(f"NAV cmd  → d={d_ft:.2f} ft ({nav_distance_m:.2f} m), "
+                      f"angle={nav_angle:.1f}°, dir={nav_dir}")
+            except (ValueError, IndexError) as e:
+                print(f"NAV parse error: {e}")
 
 # =============================================================================
 # HELPER — TURN BY ANGLE (time-based, 90° calibrated)
 # =============================================================================
 def turn_by_angle(angle_deg):
     """
-    Rotate by angle_deg using timed turns.
-    Positive angle → turn right; negative angle → turn left.
-    Duration scales linearly from the 90° calibration times.
+    Positive angle → turn right, negative → turn left.
+    Resets encoder count after turn so stray counts don't affect distance.
     """
+    global count
+
     if abs(angle_deg) < 1:
         return
 
@@ -233,7 +231,8 @@ def turn_by_angle(angle_deg):
 
     time.sleep(duration)
     stop()
-    sleep_ms(50)   # brief settle before next move
+    sleep_ms(50)
+    count = 0   # discard counts from turn so distance tracking stays clean
 
 # =============================================================================
 # MAIN LOOP
@@ -246,10 +245,9 @@ while True:
     left_blocked  = l < SAFE_SIDE
     right_blocked = r < SAFE_SIDE
 
-    print(f"S:{state} | F:{f:.0f} L:{l:.0f} R:{r:.0f} | "
+    print(f"F:{f:.0f} L:{l:.0f} R:{r:.0f} | "
           f"NAV:{nav_dir if nav_active else 'IDLE'} | "
-          f"Travelled:{distance_travelled:.2f} m / "
-          f"{nav_distance_m:.2f} m")
+          f"Travelled:{distance_travelled:.2f} m / {nav_distance_m:.2f} m")
 
     # =========================================================================
     # NAVIGATION TOWARD SOUND
@@ -262,31 +260,32 @@ while True:
             stop()
             nav_active = False
             uart.write("READY\n")
-            print("✓ Arrived within threshold, ready for communication")
-            state = GO_STRAIGHT
+            print("Arrived within threshold, ready for communication")
             continue
 
         # ---- Face the sound source ----
         if abs(nav_angle) >= 5:
             turn_by_angle(nav_angle)
-            nav_angle = 0.0   # heading is now aligned; clear so we don't re-turn
+            nav_angle = 0.0   # aligned, don't re-turn
 
-        # ---- Drive remaining distance (with live obstacle check) ----
+        # ---- Drive remaining distance ----
         start = count
         target_counts = round(remaining_m / DIST_PER_COUNT)
+        drive_start_ms = ticks_us() // 1000
         forward()
         while (count - start) < target_counts:
-            # re-check front sensor while driving
-            live_f = get_distance(ultra["front"])
-            if live_f < SAFE_FRONT:
-                stop()
-                obstacle_encountered = True
+            if (ticks_us() // 1000 - drive_start_ms) > DRIVE_TIMEOUT_MS:
+                print("Drive timeout — possible stall")
                 break
+            if SENSORS_ENABLED:
+                live_f = get_distance(ultra["front"], samples=1)
+                if live_f < SAFE_FRONT:
+                    obstacle_encountered = True
+                    break
             sleep_ms(20)
 
-        if not obstacle_encountered:
-            stop()
-            distance_travelled += (count - start) * DIST_PER_COUNT
+        stop()
+        distance_travelled += (count - start) * DIST_PER_COUNT
 
     # =========================================================================
     # OBSTACLE AVOIDANCE
@@ -295,36 +294,26 @@ while True:
         stop()
         uart.write("OBSTACLE\n")
         obstacle_encountered = True
-        print("⚠ Obstacle ahead! Choosing escape direction...")
+        print("Obstacle ahead! Choosing escape direction...")
 
-        # Update distance actually covered before stopping
-        # (already updated in the driving loop above for mid-move stops)
-
-        # Choose escape direction
         if left_blocked and not right_blocked:
-            print("→ Turning RIGHT (left side blocked)")
+            print("Turning RIGHT (left side blocked)")
             turn_by_angle(90)
-            state = FOLLOW_RIGHT
         elif right_blocked and not left_blocked:
-            print("← Turning LEFT (right side blocked)")
+            print("Turning LEFT (right side blocked)")
             turn_by_angle(-90)
-            state = FOLLOW_LEFT
         else:
             if l >= r:
-                print("← Turning LEFT (more clearance)")
+                print("Turning LEFT (more clearance)")
                 turn_by_angle(-90)
-                state = FOLLOW_LEFT
             else:
-                print("→ Turning RIGHT (more clearance)")
+                print("Turning RIGHT (more clearance)")
                 turn_by_angle(90)
-                state = FOLLOW_RIGHT
 
         stop()
         uart.write("RELISTEN\n")
         nav_active           = False
         obstacle_encountered = False
-        # distance_travelled is preserved so the next NAV command
-        # can issue a corrected remaining distance from the Pi side.
         print("Waiting for updated NAV command after re-listen...")
 
     time.sleep(0.05)
