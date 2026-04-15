@@ -1,0 +1,44 @@
+# Data folders (large audio datasets)
+baby_cry_detection/data/
+*.wav
+*.pdf
+
+# Processed/cached data
+baby_cry_detection/data/processed/
+
+# Training results (model checkpoints, logs, plots)
+baby_cry_detection/results/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
+*.egg
+
+# Virtual environments
+venv/
+.venv/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Model files (large binaries)
+*.pth
+*.pt
+*.onnx
+
+# Jupyter
+.ipynb_checkpoints/
+
+AppMobile/AppMobileFire.py
