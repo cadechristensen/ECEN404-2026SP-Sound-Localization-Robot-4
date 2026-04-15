@@ -1,17 +1,15 @@
-1. ESP32 → Pi: "LISTEN"
-   (I'm ready for a command)
+UART Protocol (Pi <-> ESP32)
+============================
 
-2. Pi: Detects sound, gets direction vector
-   X=-0.14, Y=0.36
+Pi -> ESP32:
+    "NAV angle=<float> dist_ft=<float>\n"
+    angle: bearing in degrees (positive=right, negative=left)
+    dist_ft: distance to sound source in feet
 
-3. Pi: Decides Y > X, so send forward command
-   Pi → ESP32: "FORWARD 0.36"
+ESP32 -> Pi:
+    "READY\n"    — arrived at target
+    "OBSTACLE\n" — obstacle detected, ESP32 handling avoidance
+    "RELISTEN\n" — dead end or deadlock, need re-localization
 
-4. ESP32: Moves forward for (0.36 * 3.0) = 1.08 seconds
-   While avoiding obstacles
-
-5. ESP32 → Pi: "DONE"
-   (Movement complete)
-
-6. ESP32 → Pi: "LISTEN"
-   (Ready for next sound)
+Baud: 115200
+Port: /dev/serial0 (Pi), UART1 tx=17 rx=16 (ESP32)

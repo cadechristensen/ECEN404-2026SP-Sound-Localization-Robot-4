@@ -7,7 +7,7 @@ Records audio from microphone and immediately processes it through the BabyCryAu
 Usage:
     python scripts/testing/record_and_filter.py --list-devices
     python scripts/testing/record_and_filter.py --model results/model.pth
-    python scripts/testing/record_and_filter.py --model results/model.pth --duration 10 --threshold 0.7 --plot
+    python scripts/testing/record_and_filter.py --model results/model.pth --duration 10 --threshold 0.92 --plot
     
     python scripts/testing/record_and_filter.py --device 1 --duration 10 --count 2 --plot --acoustic --both
     python scripts/testing/record_and_filter.py --device 15 --duration 10 --count 2 --plot --acoustic --both --quiet
@@ -27,7 +27,7 @@ from pathlib import Path
 from typing import Optional, Tuple
 
 from src.config import Config
-from src.audio_filter import BabyCryAudioFilter
+from src.audio_filtering import BabyCryAudioFilter
 from scripts.testing.test_my_audio import visualize_filtering_pipeline
 
 
@@ -463,7 +463,7 @@ def main():
 Examples:
   # Run with default model:
   python scripts/testing/record_and_filter.py
-  python scripts/testing/record_and_filter.py --duration 10 --threshold 0.7 --plot
+  python scripts/testing/record_and_filter.py --duration 10 --threshold 0.92 --plot
   python scripts/testing/record_and_filter.py --count 3 --acoustic
 
   # Use a different model:

@@ -6,13 +6,15 @@ Optimized for Raspberry Pi 5 8GB deployment with 4-channel microphone array supp
 """
 
 import os
+import logging
 import torch
 import torchaudio
 import torchaudio.transforms as T
 from pathlib import Path
 from typing import Tuple, List, Optional, Literal
 import warnings
-warnings.filterwarnings("ignore")
+# Suppress only torchaudio backend deprecation notices; do not silence all warnings.
+warnings.filterwarnings("ignore", category=UserWarning, module="torchaudio")
 
 from .filters import SpectralFilters
 from .detection import AcousticDetector
@@ -32,7 +34,7 @@ class BabyCryAudioFilter:
     Supports multi-channel audio processing with phase preservation for sound localization.
     """
 
-    def __init__(self, config = None, model_path: Optional[str] = None,
+    def __init__(self, config: Optional['Config'] = None, model_path: Optional[str] = None,
                  calibrator_path: Optional[str] = None, verbose: bool = True):
         """
         Initialize the baby cry audio filter.
@@ -113,7 +115,9 @@ class BabyCryAudioFilter:
 
     def compute_acoustic_features(self, audio: torch.Tensor) -> dict:
         """Backward compatibility wrapper for acoustic feature computation."""
-        return self.acoustic_detector.compute_all_features(audio, frame_length=2048, hop_length=512)
+        return self.acoustic_detector.compute_all_features(
+            audio, frame_length=self.config.N_FFT, hop_length=self.config.HOP_LENGTH
+        )
 
     def classify_audio_segments(self, audio: torch.Tensor,
                                use_acoustic_validation: bool = False) -> list:
@@ -141,11 +145,13 @@ class BabyCryAudioFilter:
             f_max=self.config.F_MAX
         )
 
-        # Inverse transforms for reconstruction (more iterations = better quality)
+        # GriffinLim is not called in the current pipeline (phase is preserved via
+        # iSTFT); it is kept here for potential offline reconstruction use.
+        # n_iter=32 avoids the 3× latency cost of n_iter=100 if it is ever activated.
         self.griffin_lim = T.GriffinLim(
             n_fft=self.config.N_FFT,
             hop_length=self.config.HOP_LENGTH,
-            n_iter=100  # Increased from 32 for much better audio quality
+            n_iter=32
         )
 
     def isolate_baby_cry(self, audio: torch.Tensor,
@@ -210,14 +216,15 @@ class BabyCryAudioFilter:
 
         if self.verbose:
             print("Step 7: Extracting cry segments...")
-            # Step 7: Extract cry segments
-            print(f"Debug: Found {len(segments)} segments to evaluate:")
-            for i, (start, end, prob) in enumerate(segments[:10]):  # Show first 10
-                print(f"  Segment {i+1}: {start:.2f}s-{end:.2f}s, score={prob:.3f}, threshold={cry_threshold}")
+
+        logging.debug("Found %d segments to evaluate", len(segments))
+        for i, (start, end, prob) in enumerate(segments[:10]):
+            logging.debug("  Segment %d: %.2fs-%.2fs, score=%.3f, threshold=%.2f",
+                          i + 1, start, end, prob, cry_threshold)
 
         cry_segments = [(start, end) for start, end, prob in segments if prob >= cry_threshold]
-        if self.verbose:
-            print(f"Debug: After filtering with threshold {cry_threshold}: {len(cry_segments)} cry segments")
+        logging.debug("After filtering with threshold %.2f: %d cry segments",
+                      cry_threshold, len(cry_segments))
 
         # Create mask for cry regions
         cry_mask = torch.zeros_like(audio, dtype=torch.bool)
@@ -313,14 +320,15 @@ class BabyCryAudioFilter:
 
         if self.verbose:
             print("Step 7: Extracting cry segments...")
-            # Extract cry segments
-            print(f"Debug: Found {len(segments)} segments to evaluate:")
-            for i, (start, end, prob) in enumerate(segments[:10]):
-                print(f"  Segment {i+1}: {start:.2f}s-{end:.2f}s, score={prob:.3f}, threshold={cry_threshold}")
+
+        logging.debug("Found %d segments to evaluate", len(segments))
+        for i, (start, end, prob) in enumerate(segments[:10]):
+            logging.debug("  Segment %d: %.2fs-%.2fs, score=%.3f, threshold=%.2f",
+                          i + 1, start, end, prob, cry_threshold)
 
         cry_segments = [(start, end) for start, end, prob in segments if prob >= cry_threshold]
-        if self.verbose:
-            print(f"Debug: After filtering: {len(cry_segments)} cry segments")
+        logging.debug("After filtering with threshold %.2f: %d cry segments",
+                      cry_threshold, len(cry_segments))
 
         # Create mask for cry regions
         cry_mask = torch.zeros(len(denoised_primary), dtype=torch.bool)
@@ -346,8 +354,8 @@ class BabyCryAudioFilter:
         Returns:
             Dictionary containing all acoustic feature scores
         """
-        frame_length = 2048
-        hop_length = 512
+        frame_length = self.config.N_FFT
+        hop_length = self.config.HOP_LENGTH
 
         if self.verbose:
             print("  Computing harmonic structure...")
@@ -526,8 +534,8 @@ class BabyCryAudioFilter:
                 if self.verbose:
                     print(f"Saved cry-only audio to: {cry_only_path} (duration: {cry_only_duration:.2f}s)")
 
-        # Calculate statistics
-        total_duration = len(audio) / self.sample_rate
+        # Calculate statistics — shape[0] is num_samples for both mono (1D) and multichannel (2D)
+        total_duration = audio.shape[0] / self.sample_rate
 
         # Merge overlapping cry segments before calculating duration
         merged_segments = merge_overlapping_segments(cry_segments)

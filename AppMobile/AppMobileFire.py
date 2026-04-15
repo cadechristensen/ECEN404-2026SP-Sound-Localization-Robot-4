@@ -18,9 +18,9 @@ import cv2
 from zeroconf import Zeroconf, ServiceInfo
 
 
-SENDER_EMAIL = os.environ.get("SENDER_EMAIL", "soundlocal4@gmail.com")
-RECEIVER_EMAIL = os.environ.get("RECEIVER_EMAIL", "cadechristensen@tamu.edu")
-SMTP_PASSWORD = os.environ.get("SMTP_PASSWORD", "")
+SENDER_EMAIL = os.environ.get("SENDER_EMAIL", "PLACEHOLDER-SENDER-EMAIL")
+RECEIVER_EMAIL = os.environ.get("RECEIVER_EMAIL", "PLACEHOLDER-RECEIVER-EMAIL")
+SMTP_PASSWORD = os.environ.get("SMTP_PASSWORD", "PLACEHOLDER-PASSWORD")
 MDNS_NAME = os.environ.get("MDNS_NAME", "BabyMonitor")
 FLASK_PORT = int(os.environ.get("FLASK_PORT", "5000"))
 CAMERA_INDEX = int(os.environ.get("CAMERA_INDEX", "0"))
@@ -28,15 +28,23 @@ CAMERA_INDEX = int(os.environ.get("CAMERA_INDEX", "0"))
 if SMTP_PASSWORD is None:
     print("WARNING: SMTP_PASSWORD not set. Email sending will fail until you set SMTP_PASSWORD env var.")
 
-# Flask app & camera
+# Flask app
 app = Flask(__name__)
-camera = cv2.VideoCapture(CAMERA_INDEX)
+camera = None  # Lazy-initialized — see get_camera()
+
+
+def get_camera():
+    """Get or initialize the camera (lazy init to avoid opening at import time)."""
+    global camera
+    if camera is None:
+        camera = cv2.VideoCapture(CAMERA_INDEX)
+    return camera
 
 # --- Notification State ---
 # This dictionary will hold the notification status.
 # The Android app will poll the /status endpoint to get this data.
 notification_status = {
-    "should_notify": True,
+    "should_notify": False,
     "message": "BABY MONITOR ALERT",
     "confidence_score": 0.0
 }
@@ -44,7 +52,7 @@ notification_status = {
 def generate_frames():
 
     while True:
-        success, frame = camera.read()
+        success, frame = get_camera().read()
         if not success:
             time.sleep(0.1)
             continue
@@ -55,6 +63,7 @@ def generate_frames():
         frame_bytes = buffer.tobytes()
         yield (b'--frame\r\n'
                b'Content-Type: image/jpeg\r\n\r\n' + frame_bytes + b'\r\n')
+        time.sleep(1 / 15)  # Cap at ~15 fps to reduce CPU/bandwidth
 
 @app.route('/video')
 def video():
@@ -116,9 +125,13 @@ def index():
     '''
 
 # Email sending
-def send_stream_email(sender_email, receiver_email, password, server_ip, port=FLASK_PORT):
-    stream_url = f"https://megacephalic-tarsha-dextrorotatory.ngrok-free.dev"
-    message = MIMEText(f"The robot has located the baby: {stream_url}")
+def send_stream_email(sender_email, receiver_email, password, server_ip, port=FLASK_PORT, confidence=0.0):
+    stream_url = f"http://{server_ip}:{port}/"
+    body = (
+        f"Baby cry detected (confidence: {confidence:.0%}).\n"
+        f"Watch live: {stream_url}"
+    )
+    message = MIMEText(body)
     message["Subject"] = "BABY MONITOR ALERT"
     message["From"] = sender_email
     message["To"] = receiver_email

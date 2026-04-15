@@ -34,6 +34,28 @@ class SpectralFilters:
         self.cry_freq_max = 3000   # Harmonic content maximum
         self.cry_peak_freq = 400   # Typical crying peak frequency
 
+        # Pre-compute the bandpass frequency mask once (n_fft and sample_rate are fixed)
+        freqs = torch.fft.fftfreq(self.n_fft, 1 / self.sample_rate)[:self.n_fft // 2 + 1]
+        transition_width = 50.0  # Hz
+        mask = torch.ones(len(freqs)) * 0.3
+        # Passband
+        cry_band = (freqs >= self.cry_freq_min) & (freqs <= self.cry_freq_max)
+        mask[cry_band] = 1.0
+        # Peak emphasis
+        peak_band = (freqs >= 300) & (freqs <= 600)
+        mask[peak_band] = 1.3
+        # Lower transition
+        lower_trans = (freqs >= self.cry_freq_min - transition_width) & (freqs < self.cry_freq_min)
+        if lower_trans.any():
+            alpha_lower = (freqs[lower_trans] - (self.cry_freq_min - transition_width)) / transition_width
+            mask[lower_trans] = 0.3 + alpha_lower * 0.7
+        # Upper transition
+        upper_trans = (freqs > self.cry_freq_max) & (freqs <= self.cry_freq_max + transition_width)
+        if upper_trans.any():
+            alpha_upper = 1.0 - (freqs[upper_trans] - self.cry_freq_max) / transition_width
+            mask[upper_trans] = 0.3 + alpha_upper * 0.7
+        self._cached_bandpass_mask = mask
+
     def bandpass_filter(self, audio: torch.Tensor) -> torch.Tensor:
         """
         Apply frequency domain bandpass filtering to emphasize baby cry frequencies.
@@ -54,34 +76,8 @@ class SpectralFilters:
             return_complex=True
         )
 
-        # Create frequency mask for baby cry range
-        freqs = torch.fft.fftfreq(self.n_fft, 1/self.sample_rate)[:self.n_fft//2 + 1]
-
-        # Frequency-based filter with smooth transitions (better audio quality)
-        freq_mask = torch.ones_like(freqs) * 0.3  # Keep some background for naturalness
-
-        # Smooth bandpass filter for cry frequencies
-        cry_band = (freqs >= self.cry_freq_min) & (freqs <= self.cry_freq_max)
-        freq_mask[cry_band] = 1.0
-
-        # Gentle emphasis on typical cry frequencies (avoid over-amplification)
-        peak_band = (freqs >= 300) & (freqs <= 600)
-        freq_mask[peak_band] = 1.3  # Reduced from 2.0 to avoid distortion
-
-        # Apply smooth roll-off at edges (reduces artifacts)
-        transition_width = 50  # Hz
-        for i, f in enumerate(freqs):
-            if self.cry_freq_min - transition_width < f < self.cry_freq_min:
-                # Smooth transition at low end
-                alpha = (f - (self.cry_freq_min - transition_width)) / transition_width
-                freq_mask[i] = 0.3 + alpha * 0.7
-            elif self.cry_freq_max < f < self.cry_freq_max + transition_width:
-                # Smooth transition at high end
-                alpha = 1 - (f - self.cry_freq_max) / transition_width
-                freq_mask[i] = 0.3 + alpha * 0.7
-
-        # Apply filter (preserves phase)
-        stft_filtered = stft * freq_mask.unsqueeze(-1)
+        # Use pre-computed vectorized mask (no per-call Python loop)
+        stft_filtered = stft * self._cached_bandpass_mask.unsqueeze(-1)
 
         # Reconstruct audio (phase-preserving inverse STFT)
         filtered_audio = torch.istft(
@@ -316,7 +312,9 @@ class SpectralFilters:
             # Measure spectral flatness (Wiener entropy)
             # High flatness = noise-like = environmental sound
             # Low flatness = tonal/harmonic = voice/cry
-            geometric_mean = torch.exp(torch.mean(torch.log(frame_mag + 1e-10)))
+            log_mag = torch.log(frame_mag + 1e-10)
+            log_mag = torch.nan_to_num(log_mag, nan=0.0, posinf=0.0, neginf=-46.0)
+            geometric_mean = torch.exp(torch.mean(log_mag))
             arithmetic_mean = torch.mean(frame_mag)
 
             if arithmetic_mean > 1e-8:

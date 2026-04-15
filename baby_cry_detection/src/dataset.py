@@ -4,7 +4,7 @@ Handles data loading, preprocessing, and augmentation for PyTorch training.
 """
 
 import torch
-from torch.utils.data import Dataset, DataLoader, WeightedRandomSampler
+from torch.utils.data import Dataset, DataLoader
 from sklearn.model_selection import train_test_split
 import numpy as np
 from pathlib import Path
@@ -22,15 +22,25 @@ except ImportError:
 def collate_with_indices(batch):
     """
     Custom collate function that preserves original dataset indices.
-    Handles both (spec, label) and (spec, label, idx) tuples.
+    Handles 2-tuple (spec, label), 3-tuple (spec, label, idx),
+    and 4-tuple (spec, label, idx, sample_weight).
 
     Args:
         batch: List of tuples from dataset
 
     Returns:
-        Tuple of (spectrograms, labels) or (spectrograms, labels, indices) as tensors
+        Tuple of tensors matching the input tuple length.
     """
-    if len(batch[0]) == 3:
+    n = len(batch[0])
+    if n == 4:
+        # Phase 3: has indices and per-sample loss weights
+        specs, labels, indices, weights = zip(*batch)
+        specs = torch.stack(specs, dim=0)
+        labels = torch.stack(labels, dim=0)
+        indices = torch.tensor(indices, dtype=torch.long)
+        weights = torch.tensor(weights, dtype=torch.float32)
+        return specs, labels, indices, weights
+    elif n == 3:
         # Has indices
         specs, labels, indices = zip(*batch)
         specs = torch.stack(specs, dim=0)
@@ -45,6 +55,19 @@ def collate_with_indices(batch):
         return specs, labels
 
 
+def collate_filter_corrupt(batch):
+    """
+    Collate function that filters out corrupt samples (label == -1) before batching.
+    Used for validation and test DataLoaders to prevent zero-tensor poisoning of metrics.
+
+    Returns None if all samples in batch are corrupt (caller must skip).
+    """
+    clean_batch = [item for item in batch if item[1].item() != -1]
+    if not clean_batch:
+        return None
+    return collate_with_indices(clean_batch)
+
+
 class BabyCryDataset(Dataset):
     """
     Custom Dataset class for baby cry detection.
@@ -54,7 +77,7 @@ class BabyCryDataset(Dataset):
     def __init__(
         self,
         audio_files: List[Tuple[Path, str]],
-        config: Config = Config(),
+        config: Optional[Config] = None,
         is_training: bool = True,
         augment: bool = True
     ):
@@ -63,10 +86,12 @@ class BabyCryDataset(Dataset):
 
         Args:
             audio_files: List of (file_path, label) tuples
-            config: Configuration object
+            config: Configuration object. Defaults to Config().
             is_training: Whether this is for training (affects augmentation)
             augment: Whether to apply data augmentation
         """
+        if config is None:
+            config = Config()
         self.audio_files = audio_files
         self.config = config
         self.is_training = is_training
@@ -84,11 +109,8 @@ class BabyCryDataset(Dataset):
 
         self.augmentation = AudioAugmentation(config, noise_files) if self.augment else None
 
-        # Create label encoding based on config mode
-        if config.MULTI_CLASS_MODE:
-            self.label_to_idx = {label: idx for idx, label in config.MULTI_CLASS_LABELS.items()}
-        else:
-            self.label_to_idx = {'non_cry': 0, 'cry': 1}
+        # Binary classification label encoding
+        self.label_to_idx = {'non_cry': 0, 'cry': 1}
         self.idx_to_label = {v: k for k, v in self.label_to_idx.items()}
 
         # Log dataset statistics
@@ -119,8 +141,11 @@ class BabyCryDataset(Dataset):
                 waveform = self.augmentation.random_augment(waveform)
                 spectrogram = self.preprocessor.extract_log_mel_spectrogram(waveform)
             else:
-                # Standard preprocessing
-                spectrogram = self.preprocessor.process_audio_file(file_path)
+                # Standard preprocessing; pass training flag so random vs center
+                # crop matches whether we are in a training or eval split.
+                spectrogram = self.preprocessor.process_audio_file(
+                    file_path, training=self.augment
+                )
 
             # QUICK WIN 1: Apply SpecAugment to mel-spectrogram during training
             if self.augment and hasattr(self.augmentation, 'spec_augment'):
@@ -135,12 +160,20 @@ class BabyCryDataset(Dataset):
             return spectrogram, label, idx
 
         except Exception as e:
-            # If loading fails, return a zero spectrogram with the correct shape
-            logging.warning(f"Failed to load {file_path}: {e}")
+            # During training, a zero spectrogram with a real label is training-data
+            # poisoning — the model learns "silence == cry/non-cry" from every
+            # corrupt file in every epoch.  Re-raise so the DataLoader surfaces the
+            # failure loudly.  During inference (is_training=False) we fall back to
+            # a zero tensor so a single bad file does not abort an evaluation run (C4).
+            logging.error(f"Failed to load {file_path}: {e}")
+            if self.is_training:
+                raise
+            # Return sentinel label -1 for corrupt eval files.
+            # The collate_filter_corrupt function will drop these samples before
+            # they reach the model, preventing zero-tensor poisoning of eval metrics.
             dummy_spec = torch.zeros((1, self.config.N_MELS,
                                     int(self.config.DURATION * self.config.SAMPLE_RATE // self.config.HOP_LENGTH) + 1))
-            label = torch.tensor(self.label_to_idx[label_str], dtype=torch.long)
-            return dummy_spec, label, idx
+            return dummy_spec, torch.tensor(-1, dtype=torch.long), idx
 
     def _log_dataset_info(self):
         """Log information about the dataset."""
@@ -158,13 +191,15 @@ class DatasetManager:
     Manager class for handling dataset creation and data loading.
     """
 
-    def __init__(self, config: Config = Config()):
+    def __init__(self, config: Optional[Config] = None):
         """
         Initialize the dataset manager.
 
         Args:
-            config: Configuration object
+            config: Configuration object. Defaults to Config().
         """
+        if config is None:
+            config = Config()
         self.config = config
         self.audio_files = None
         self.class_weights = None
@@ -181,7 +216,6 @@ class DatasetManager:
         self.audio_files = collect_audio_files(
             self.config.DATA_DIR,
             self.config.SUPPORTED_FORMATS,
-            multi_class=self.config.MULTI_CLASS_MODE
         )
 
         if not self.audio_files:
@@ -189,27 +223,21 @@ class DatasetManager:
 
         logging.info(f"Found {len(self.audio_files)} total audio files")
 
-        # Calculate class weights for balanced training with emphasis on cry detection
-        cry_weight_multiplier = getattr(self.config, 'CRY_WEIGHT_MULTIPLIER', 2.0)
-        baby_noncry_weight_cap = getattr(self.config, 'BABY_NONCRY_WEIGHT_CAP', None)
+        # Calculate class weights for balanced training with emphasis on cry detection.
+        cry_weight_multiplier = self.config.CRY_WEIGHT_MULTIPLIER
 
-        # Get class labels in the correct order based on mode
-        if self.config.MULTI_CLASS_MODE:
-            class_labels_list = [self.config.MULTI_CLASS_LABELS[i] for i in sorted(self.config.MULTI_CLASS_LABELS.keys())]
-        else:
-            class_labels_list = ['non_cry', 'cry']
+        # Binary class labels
+        class_labels_list = ['non_cry', 'cry']
 
         self.class_weights = get_class_weights(
             self.audio_files,
             cry_weight_multiplier=cry_weight_multiplier,
             class_labels=class_labels_list,
-            baby_noncry_weight_cap=baby_noncry_weight_cap
         )
 
         # Log class weights
         weight_info = ", ".join([f"{label}={self.class_weights[i]:.3f}" for i, label in enumerate(class_labels_list)])
-        cap_info = f", baby_noncry_cap={baby_noncry_weight_cap}" if baby_noncry_weight_cap else ""
-        logging.info(f"Class weights (cry_multiplier={cry_weight_multiplier}{cap_info}): {weight_info}")
+        logging.info(f"Class weights (cry_multiplier={cry_weight_multiplier}): {weight_info}")
 
         # Split data into train, validation, and test sets
         train_files, temp_files = train_test_split(
@@ -258,7 +286,7 @@ class DatasetManager:
         val_dataset: BabyCryDataset,
         test_dataset: BabyCryDataset,
         use_weighted_sampling: bool = True,
-        num_workers: int = None
+        num_workers: Optional[int] = None
     ) -> Tuple[DataLoader, DataLoader, DataLoader]:
         """
         Create data loaders for training, validation, and testing.
@@ -275,29 +303,23 @@ class DatasetManager:
         """
         if num_workers is None:
             num_workers = self.config.NUM_WORKERS
-        # Create weighted sampler for balanced training
-        train_sampler = None
-        if use_weighted_sampling and self.class_weights is not None:
-            # Calculate sample weights
-            sample_weights = []
-            for _, label_str in train_dataset.audio_files:
-                label_idx = train_dataset.label_to_idx[label_str]
-                sample_weights.append(self.class_weights[label_idx].item())
 
-            train_sampler = WeightedRandomSampler(
-                weights=sample_weights,
-                num_samples=len(sample_weights),
-                replacement=True
-            )
+        # pin_memory only benefits CUDA DMA transfers; on the Raspberry Pi (CPU-only)
+        # it wastes locked memory without any throughput gain and risks OOM (C3).
+        pin_memory = torch.cuda.is_available()
 
-        # Create data loaders with custom collate function to preserve indices
+        # Dataset is nearly balanced (0.96:1 ratio). WeightedRandomSampler
+        # combined with FocalLoss class weights and CRY_WEIGHT_MULTIPLIER
+        # results in excessive class weighting. Use shuffle=True instead.
+        _persistent = num_workers > 0
+
         train_loader = DataLoader(
             train_dataset,
             batch_size=self.config.BATCH_SIZE,
-            sampler=train_sampler,
-            shuffle=(train_sampler is None),  # Don't shuffle if using sampler
+            shuffle=True,
             num_workers=num_workers,
-            pin_memory=True,
+            pin_memory=pin_memory,
+            persistent_workers=_persistent,
             drop_last=True,
             collate_fn=collate_with_indices
         )
@@ -307,8 +329,9 @@ class DatasetManager:
             batch_size=self.config.BATCH_SIZE,
             shuffle=False,
             num_workers=num_workers,
-            pin_memory=True,
-            collate_fn=collate_with_indices
+            pin_memory=pin_memory,
+            persistent_workers=_persistent,
+            collate_fn=collate_filter_corrupt
         )
 
         test_loader = DataLoader(
@@ -316,8 +339,9 @@ class DatasetManager:
             batch_size=self.config.BATCH_SIZE,
             shuffle=False,
             num_workers=num_workers,
-            pin_memory=True,
-            collate_fn=collate_with_indices
+            pin_memory=pin_memory,
+            persistent_workers=_persistent,
+            collate_fn=collate_filter_corrupt
         )
 
         return train_loader, val_loader, test_loader
@@ -333,12 +357,12 @@ class DatasetManager:
             self.audio_files = collect_audio_files(
                 self.config.DATA_DIR,
                 self.config.SUPPORTED_FORMATS,
-                multi_class=self.config.MULTI_CLASS_MODE
             )
 
-        # Create a temporary dataset to get input shape
+        # Create a temporary dataset to get input shape.
+        # __getitem__ returns a 3-tuple (spectrogram, label, idx); unpack accordingly (C1).
         temp_dataset = BabyCryDataset([self.audio_files[0]], self.config, is_training=False, augment=False)
-        sample_input, _ = temp_dataset[0]
+        sample_input, _, _ = temp_dataset[0]
 
         return sample_input.shape
 
@@ -364,9 +388,9 @@ def test_dataset():
 
         # Test loading a batch
         for batch_idx, batch_data in enumerate(train_loader):
-            # Handle both old format (specs, labels) and new format (specs, labels, indices)
-            if len(batch_data) == 3:
-                spectrograms, labels, _ = batch_data
+            # Handle 4-tuple, 3-tuple, and 2-tuple batch formats
+            if len(batch_data) >= 3:
+                spectrograms, labels = batch_data[0], batch_data[1]
             else:
                 spectrograms, labels = batch_data
 

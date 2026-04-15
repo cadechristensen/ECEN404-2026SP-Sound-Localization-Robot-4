@@ -84,16 +84,6 @@ class FeatureClass:
         mel_feat = mel_feat.transpose((0, 2, 1)).reshape((linear_spectra.shape[0], -1))
         return mel_feat
 
-    def _get_foa_intensity_vectors(self, linear_spectra):
-        W = linear_spectra[:, :, 0]
-        I = np.real(np.conj(W)[:, :, np.newaxis] * linear_spectra[:, :, 1:])
-        E = self._eps + (np.abs(W)**2 + ((np.abs(linear_spectra[:, :, 1:])**2).sum(-1))/3.0 )
-        
-        I_norm = I/E[:, :, np.newaxis]
-        I_norm_mel = np.transpose(np.dot(np.transpose(I_norm, (0,2,1)), self._mel_wts), (0,2,1))
-        foa_iv = I_norm_mel.transpose((0, 2, 1)).reshape((linear_spectra.shape[0], self._nb_mel_bins * 3))
-        return foa_iv
-
     def _get_gcc(self, linear_spectra):
         import math
         def nCr(n, r): return math.factorial(n) // math.factorial(r) // math.factorial(n-r)
@@ -119,21 +109,16 @@ class FeatureClass:
 
     def extract_features_from_memory(self, y, sr):
         if sr != self._fs:
-            pass 
-            
+            y = librosa.resample(y, orig_sr=sr, target_sr=self._fs)
         audio_in = self._process_loaded_audio(y)
         return self._calculate_features(audio_in)
 
     def _calculate_features(self, audio_in):
         spect = self._spectrogram(audio_in)
         mel_spect = self._get_mel_spectrogram(spect)
-        feat = None
-        if self._dataset == 'foa':
-            foa_iv = self._get_foa_intensity_vectors(spect)
-            feat = np.concatenate((mel_spect, foa_iv), axis=-1)
-        elif self._dataset == 'mic':
-            gcc = self._get_gcc(spect)
-            feat = np.concatenate((mel_spect, gcc), axis=-1)
-        else:
-            raise ValueError(f"ERROR: Unknown dataset format {self._dataset}")
+        # Only mic path is supported — all 4 channels are directional parabolic dishes.
+        # FOA intensity vectors assume channel 0 is omnidirectional (Ambisonic W),
+        # which is physically incorrect for this array.
+        gcc = self._get_gcc(spect)
+        feat = np.concatenate((mel_spect, gcc), axis=-1)
         return feat

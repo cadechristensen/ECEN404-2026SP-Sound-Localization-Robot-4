@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 
 class MobileApp:
     """
-    Wrapper around AppMobile.py providing Flask video streaming,
+    Wrapper around AppMobileFire.py providing Flask video streaming,
     mDNS advertisement, and email alert capabilities.
     """
 
@@ -67,12 +67,20 @@ class MobileApp:
             password=AppMobile.SMTP_PASSWORD,
             server_ip=self._server_ip,
             port=AppMobile.FLASK_PORT,
+            confidence=confidence,
         )
 
         # Update polling status so the Android app can also detect the alert
         AppMobile.notification_status["should_notify"] = True
         AppMobile.notification_status["confidence_score"] = confidence
         AppMobile.notification_status["message"] = f"BABY MONITOR ALERT! Confidence: {confidence:.1%}"
+
+    def reset_notification(self) -> None:
+        """Reset notification state so the next detection can trigger a fresh alert."""
+        AppMobile.notification_status["should_notify"] = False
+        AppMobile.notification_status["confidence_score"] = 0.0
+        AppMobile.notification_status["message"] = "BABY MONITOR ALERT"
+        logger.debug("Notification status reset")
 
     @property
     def stream_url(self) -> str:

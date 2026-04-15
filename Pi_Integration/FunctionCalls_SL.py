@@ -30,15 +30,13 @@ class SoundLocalization:
     # DOAnet expects 48 kHz input
     DOANET_SAMPLE_RATE = 48000
 
-    def __init__(self, models_dir: str = '.', task_id: str = '6'):
-        # Infer expects to find model files relative to CWD or models_dir,
-        # so switch to the SoundLocalization directory for initialization.
-        orig_cwd = os.getcwd()
-        try:
-            os.chdir(_SL_DIR)
-            self._infer = Infer(task_id=task_id, models_dir=models_dir)
-        finally:
-            os.chdir(orig_cwd)
+    def __init__(self, models_dir: str = None, task_id: str = '6', single_model: str = None):
+        # Use absolute path to models directory to avoid thread-unsafe os.chdir()
+        if models_dir is None:
+            models_dir = os.path.join(_SL_DIR, 'models')
+
+        # Infer needs SL_DIR on sys.path (already added above)
+        self._infer = Infer(task_id=task_id, models_dir=models_dir, single_model=single_model)
 
         logger.info("SoundLocalization initialized")
 
@@ -102,17 +100,13 @@ class SoundLocalization:
 
         try:
             sf.write(tmp_path, write_data, self.DOANET_SAMPLE_RATE)
-            logger.info(f"Temp audio written to {tmp_path}")
+            logger.debug(f"Temp audio written to {tmp_path}")
 
-            # Run inference from the SoundLocalization directory
-            orig_cwd = os.getcwd()
-            try:
-                os.chdir(_SL_DIR)
-                result_str = self._infer.process_file(tmp_path)
-            finally:
-                os.chdir(orig_cwd)
-
-            logger.info(f"Localization result: {result_str}")
+            # Run inference (uses absolute paths, no chdir needed)
+            result_str = self._infer.process_file(tmp_path)
+            # Note: main.py's _localize_and_navigate logs the full
+            # "Localization (relisten N/M): ... — <sources>" line with
+            # more context, so we don't duplicate it here.
         finally:
             # Clean up temp file
             if os.path.exists(tmp_path):
@@ -136,10 +130,13 @@ class SoundLocalization:
             'sources': result_str,
         }
 
-        # Extract direction from first (loudest) source
-        dir_match = re.search(r'Source\s*\d+:\s*([\d.]+)°', result_str)
-        if dir_match:
-            result['direction_deg'] = float(dir_match.group(1))
+        # Source 0 is already the best source (sorted by closest to
+        # loudest mic in function_calls.py), so just pick the first match
+        source_match = re.search(
+            r'Source\s*0:\s*([\d.]+)°\s*\(Loudness:\s*([\d.]+)\)', result_str
+        )
+        if source_match:
+            result['direction_deg'] = float(source_match.group(1))
 
         # Extract distance
         dist_match = re.search(r'Distance:\s*([\d.]+)\s*ft', result_str)

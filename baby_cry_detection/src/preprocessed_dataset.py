@@ -19,6 +19,52 @@ except ImportError:
     from data_preprocessing import AudioAugmentation, collect_noise_files  # type: ignore
 
 
+def _compute_config_hash(config: Config) -> str:
+    """Compute the preprocessing config hash for the given config.
+
+    Mirrors ``preprocess_dataset.compute_config_hash`` exactly so the two
+    values are always comparable.  Only preprocessing-relevant parameters are
+    hashed; augmentation settings are intentionally excluded.
+
+    Args:
+        config: Configuration object.
+
+    Returns:
+        16-character hex hash string.
+    """
+    import hashlib
+
+    config_dict = {
+        "SAMPLE_RATE": config.SAMPLE_RATE,
+        "DURATION": config.DURATION,
+        "N_MELS": config.N_MELS,
+        "N_FFT": config.N_FFT,
+        "HOP_LENGTH": config.HOP_LENGTH,
+        "F_MIN": config.F_MIN,
+        "F_MAX": config.F_MAX,
+    }
+    config_str = json.dumps(config_dict, sort_keys=True)
+    return hashlib.sha256(config_str.encode()).hexdigest()[:16]
+
+
+def get_subcategory(original_path: str) -> str:
+    """Extract the subcategory from a manifest original_path.
+
+    Examples:
+        'hard_negatives\\baby_noncry\\file.wav' -> 'baby_noncry'
+        'hard_negatives/adult_scream/file.wav'  -> 'adult_scream'
+        'cry_baby\\cry\\file.wav'               -> 'cry'
+        'cry_baby/cry_ICSD/file.wav'            -> 'cry_ICSD'
+
+    Returns:
+        Subcategory string (directory name one level below the top-level folder).
+    """
+    parts = Path(original_path).parts
+    if len(parts) > 1 and parts[0] in ('hard_negatives', 'cry_baby'):
+        return parts[1]
+    return parts[0]
+
+
 class PreprocessedBabyCryDataset(Dataset):
     """
     Dataset class for loading pre-computed spectrograms from disk.
@@ -37,7 +83,7 @@ class PreprocessedBabyCryDataset(Dataset):
     def __init__(
         self,
         preprocessed_dir: Path,
-        config: Config = Config(),
+        config: Optional[Config] = None,
         is_training: bool = True,
         augment: bool = True,
         file_indices: Optional[List[int]] = None
@@ -47,12 +93,14 @@ class PreprocessedBabyCryDataset(Dataset):
 
         Args:
             preprocessed_dir: Directory containing preprocessed spectrograms
-            config: Configuration object (for validation and augmentation)
+            config: Configuration object (for validation and augmentation). Defaults to Config().
             is_training: Whether this is for training (affects augmentation)
             augment: Whether to apply data augmentation
             file_indices: Optional list of indices to use (for train/val/test split)
         """
         self.preprocessed_dir = Path(preprocessed_dir)
+        if config is None:
+            config = Config()
         self.config = config
         self.is_training = is_training
         self.augment = augment and is_training
@@ -70,21 +118,30 @@ class PreprocessedBabyCryDataset(Dataset):
         else:
             self.file_list = self.manifest['files']
 
-        # Create label encoding based on config mode
-        if config.MULTI_CLASS_MODE:
-            self.label_to_idx = {label: idx for idx, label in config.MULTI_CLASS_LABELS.items()}
-        else:
-            self.label_to_idx = {'non_cry': 0, 'cry': 1}
+        # Binary classification label encoding
+        self.label_to_idx = {'non_cry': 0, 'cry': 1}
         self.idx_to_label = {v: k for k, v in self.label_to_idx.items()}
 
-        # Initialize augmentation (spectrogram-level augmentation)
-        # Note: This is different from waveform-level augmentation used in preprocessing
+        # Pre-compute per-sample loss weights from category (Phase 3).
+        # Used to penalize hard-negative categories (baby_noncry, adult_scream) harder.
+        category_loss_weights = getattr(config, 'CATEGORY_LOSS_WEIGHTS', {})
+        self.sample_loss_weights: List[float] = []
+        for file_info in self.file_list:
+            original_path = file_info.get('original_path', '')
+            cat = get_subcategory(original_path) if original_path else ''
+            self.sample_loss_weights.append(category_loss_weights.get(cat, 1.0))
+
+        # Initialize augmentation (spectrogram-level augmentation).
+        # Note: This is different from waveform-level augmentation used in preprocessing.
+        # We store the full AudioAugmentation object (not just a bound method) so the
+        # owner is reachable, inspectable, and safely picklable by DataLoader workers (W6).
+        self._augmentation_obj: Optional[AudioAugmentation] = None
         self.augmentation = None
         if self.augment:
-            # For preprocessed data, we can apply simple spectrogram augmentations
-            # like SpecAugment (time/frequency masking)
-            # We don't need noise files since spectrograms are already computed
-            self.augmentation = self._create_spectrogram_augmenter()
+            # For preprocessed data, we apply SpecAugment (time/frequency masking) only;
+            # no noise files are needed — waveform mixing was done at preprocessing time.
+            self._augmentation_obj = AudioAugmentation(self.config, noise_files=[])
+            self.augmentation = self._augmentation_obj.spec_augment
 
         # Log dataset statistics
         self._log_dataset_info()
@@ -108,25 +165,36 @@ class PreprocessedBabyCryDataset(Dataset):
         logging.info(f"Loaded manifest with {len(manifest['files'])} files")
         logging.info(f"Config hash: {manifest['config_hash']}")
 
+        # Validate that the preprocessed data was generated with the current config.
+        stored_hash = manifest["config_hash"]
+        current_hash = _compute_config_hash(self.config)
+        if stored_hash != current_hash:
+            logging.warning(
+                "Preprocessed data config hash mismatch. "
+                f"Data was processed with hash {stored_hash} but current config hash is {current_hash}. "
+                "Consider repreprocessing with: "
+                "python scripts/preprocess_dataset.py --output data/processed/vNEXT"
+            )
+
         return manifest
 
-    def _create_spectrogram_augmenter(self):
-        """
-        QUICK WIN 1: Create SpecAugment for spectrogram-level augmentation.
-        Applies time and frequency masking to preprocessed spectrograms.
-        """
-        # AudioAugmentation is already imported at the top of this file
-        # Create augmentation instance with SpecAugment enabled
-        augmenter = AudioAugmentation(self.config, noise_files=[])
+    @property
+    def audio_files(self):
+        """Compatibility property for evaluation error logging.
 
-        # Return the spec_augment method
-        return augmenter.spec_augment if hasattr(augmenter, 'spec_augment') else None
+        Returns a list of (Path, label_idx) tuples matching the interface
+        expected by evaluation/utils.py's generate_predictions_and_log_errors.
+        """
+        return [
+            (Path(f.get('original_path', 'unknown')), self.label_to_idx.get(f['label'], 0))
+            for f in self.file_list
+        ]
 
     def __len__(self) -> int:
         """Return the size of the dataset."""
         return len(self.file_list)
 
-    def __getitem__(self, idx: int) -> Tuple[torch.Tensor, torch.Tensor, int]:
+    def __getitem__(self, idx: int) -> Tuple[torch.Tensor, torch.Tensor, int, float]:
         """
         Get a single item from the dataset.
 
@@ -134,7 +202,7 @@ class PreprocessedBabyCryDataset(Dataset):
             idx: Index of the item
 
         Returns:
-            Tuple of (spectrogram, label, original_idx)
+            Tuple of (spectrogram, label, original_idx, sample_loss_weight)
         """
         file_info = self.file_list[idx]
 
@@ -142,34 +210,53 @@ class PreprocessedBabyCryDataset(Dataset):
         preprocessed_filename = file_info['preprocessed_path']
         spectrogram_path = self.preprocessed_dir / preprocessed_filename
 
-        try:
-            # Load preprocessed spectrogram using memory mapping for efficiency
-            # This allows OS to cache hot files and avoid loading entire array into RAM
-            spectrogram_np = np.load(spectrogram_path, mmap_mode='r')
+        # Per-sample loss weight for this category (Phase 3)
+        sample_weight = self.sample_loss_weights[idx]
 
-            # Convert to writable array (mmap is read-only)
+        try:
+            # Load preprocessed spectrogram.  mmap_mode='r' gives the OS page-cache a
+            # chance to satisfy repeated accesses without re-reading from disk, but the
+            # np.array(..., copy=True) call below immediately copies all bytes into a
+            # new heap array so we can pass it to torch without touching the mmap again.
+            # The copy is required because mmap arrays are read-only and torch requires
+            # a writable buffer (W9 — the previous comment incorrectly claimed "avoid
+            # loading entire array into RAM").
+            spectrogram_np = np.load(spectrogram_path, mmap_mode='r')
             spectrogram_np = np.array(spectrogram_np, copy=True)
 
             # Convert to tensor
             spectrogram = torch.from_numpy(spectrogram_np).float()
 
-            # Apply augmentation if enabled
-            if self.augment and self.augmentation is not None:
-                spectrogram = self.augmentation(spectrogram)
+            # Add channel dimension before augmentation so spec_augment always receives
+            # a 2-D (n_mels, time_steps) tensor regardless of whether the .npy was
+            # saved with or without a channel dim (W8).
+            if spectrogram.dim() == 2:
+                spectrogram = spectrogram.unsqueeze(0)  # (1, n_mels, time_steps)
+            # spec_augment expects (n_mels, time_steps) — squeeze channel for the call
+            # then restore it afterwards.
+            if self.augment and self._augmentation_obj is not None:
+                spec_2d = spectrogram.squeeze(0)
+                # Apply random duration simulation FIRST to break zero-padding bias.
+                # This must precede SpecAugment because it re-normalizes the spectrogram.
+                spec_2d = self._augmentation_obj.random_duration_simulation(spec_2d)
+                # Then apply SpecAugment (time/frequency masking)
+                spec_2d = self._augmentation_obj.spec_augment(spec_2d)
+                spectrogram = spec_2d.unsqueeze(0)
 
             # Get label
             label_str = file_info['label']
             label = torch.tensor(self.label_to_idx[label_str], dtype=torch.long)
 
-            # Add channel dimension for CNN input if not present
-            if spectrogram.dim() == 2:
-                spectrogram = spectrogram.unsqueeze(0)  # Shape: (1, n_mels, time_steps)
-
-            return spectrogram, label, idx
+            return spectrogram, label, idx, sample_weight  # shape: (1, n_mels, time_steps)
 
         except Exception as e:
-            # If loading fails, return a zero spectrogram with the correct shape
-            logging.warning(f"Failed to load {spectrogram_path}: {e}")
+            # During training a zero spectrogram with a real label poisons the model
+            # (it learns "silence == cry/non_cry").  Re-raise so the DataLoader surfaces
+            # the failure.  During inference we fall back to a zero tensor so a single
+            # bad cached file does not abort an evaluation run (C4).
+            logging.error(f"Failed to load {spectrogram_path}: {e}")
+            if self.is_training:
+                raise
 
             # Infer shape from manifest or use default
             if 'shape' in file_info:
@@ -183,7 +270,7 @@ class PreprocessedBabyCryDataset(Dataset):
             label_str = file_info['label']
             label = torch.tensor(self.label_to_idx[label_str], dtype=torch.long)
 
-            return dummy_spec, label, idx
+            return dummy_spec, label, idx, sample_weight
 
     def _log_dataset_info(self):
         """Log information about the dataset."""
@@ -201,18 +288,31 @@ class PreprocessedBabyCryDataset(Dataset):
         Get information about storage usage.
 
         Returns:
-            Dictionary with storage statistics
+            Dictionary with storage statistics, including a count of missing files (W7).
         """
-        total_size = sum(
-            (self.preprocessed_dir / f['preprocessed_path']).stat().st_size
-            for f in self.file_list
-            if (self.preprocessed_dir / f['preprocessed_path']).exists()
-        )
+        present_sizes = []
+        missing_count = 0
+        for f in self.file_list:
+            p = self.preprocessed_dir / f['preprocessed_path']
+            if p.exists():
+                present_sizes.append(p.stat().st_size)
+            else:
+                missing_count += 1
 
+        if missing_count:
+            logging.warning(
+                f"get_storage_info: {missing_count}/{len(self.file_list)} preprocessed files missing"
+            )
+
+        total_size = sum(present_sizes)
+        present_count = len(present_sizes)
         return {
             'total_files': len(self.file_list),
+            'present_files': present_count,
+            'missing_files': missing_count,
             'total_size_mb': total_size / (1024**2),
-            'avg_size_kb': (total_size / len(self.file_list)) / 1024 if self.file_list else 0
+            # avg over present files only — missing files are excluded from the sum (W7)
+            'avg_size_kb': (total_size / present_count) / 1024 if present_count else 0,
         }
 
 
@@ -222,21 +322,33 @@ class PreprocessedDatasetManager:
     Maintains same interface as original DatasetManager for compatibility.
     """
 
-    def __init__(self, preprocessed_dir: Path, config: Config = Config()):
+    def __init__(self, preprocessed_dir: Path, config: Optional[Config] = None):
         """
         Initialize the dataset manager.
 
         Args:
             preprocessed_dir: Directory containing preprocessed spectrograms
-            config: Configuration object
+            config: Configuration object. Defaults to Config().
         """
         self.preprocessed_dir = Path(preprocessed_dir)
+        if config is None:
+            config = Config()
         self.config = config
 
-        # Load manifest to get total file count
+        # Load manifest to get total file count — mirror the validation that
+        # PreprocessedBabyCryDataset._load_manifest performs (C2).
         manifest_path = self.preprocessed_dir / "manifest.json"
-        with open(manifest_path, 'r') as f:
-            self.manifest = json.load(f)
+        if not manifest_path.exists():
+            raise FileNotFoundError(f"Manifest not found: {manifest_path}")
+        try:
+            with open(manifest_path, 'r') as f:
+                self.manifest = json.load(f)
+        except json.JSONDecodeError as exc:
+            raise ValueError(f"Malformed manifest JSON at {manifest_path}: {exc}") from exc
+        required_keys = ['files', 'config_hash', 'total_files']
+        for key in required_keys:
+            if key not in self.manifest:
+                raise ValueError(f"Invalid manifest: missing key '{key}'")
 
         self.total_files = len(self.manifest['files'])
 
@@ -269,35 +381,53 @@ class PreprocessedDatasetManager:
         if total_samples == 0:
             # Safety fallback for empty dataset
             logging.warning("No samples found in manifest, using default weights")
-            if self.config.MULTI_CLASS_MODE:
-                num_classes = len(self.config.MULTI_CLASS_LABELS)
-                return torch.ones(num_classes)
-            else:
-                return torch.tensor([1.0, 1.0])
+            return torch.tensor([1.0, 1.0])
 
-        if self.config.MULTI_CLASS_MODE:
-            num_classes = len(self.config.MULTI_CLASS_LABELS)
-            class_weights = torch.ones(num_classes)
+        # Binary classification
+        cry_count = label_counts.get('cry', 1)
+        non_cry_count = label_counts.get('non_cry', 1)
 
-            for idx, label in self.config.MULTI_CLASS_LABELS.items():
-                count = label_counts.get(label, 1)  # Avoid division by zero
-                class_weights[idx] = total_samples / (num_classes * count)
-        else:
-            # Binary classification
-            cry_count = label_counts.get('cry', 1)
-            non_cry_count = label_counts.get('non_cry', 1)
+        cry_weight = total_samples / (2 * cry_count)
+        non_cry_weight = total_samples / (2 * non_cry_count)
 
-            cry_weight = total_samples / (2 * cry_count)
-            non_cry_weight = total_samples / (2 * non_cry_count)
+        # Apply cry weight multiplier from config.
+        cry_weight *= self.config.CRY_WEIGHT_MULTIPLIER
 
-            # Apply cry weight multiplier for better cry detection
-            cry_weight_multiplier = getattr(self.config, 'CRY_WEIGHT_MULTIPLIER', 2.0)
-            cry_weight *= cry_weight_multiplier
-
-            class_weights = torch.tensor([non_cry_weight, cry_weight])
+        class_weights = torch.tensor([non_cry_weight, cry_weight])
 
         logging.info(f"Calculated class weights: {class_weights}")
         return class_weights
+
+    def compute_sample_weights(self, file_indices: List[int]) -> List[float]:
+        """Compute per-sample sampling weights for WeightedRandomSampler.
+
+        Uses CATEGORY_SAMPLING_WEIGHTS from config to oversample hard-negative
+        categories (e.g., baby_noncry 4x, adult_scream 3x).
+
+        Args:
+            file_indices: Indices into manifest['files'] for the training split.
+
+        Returns:
+            List of float weights, one per sample in file_indices.
+        """
+        category_weights = getattr(self.config, 'CATEGORY_SAMPLING_WEIGHTS', {})
+        weights = []
+        category_counts: Dict[str, int] = {}
+        for idx in file_indices:
+            original_path = self.manifest['files'][idx].get('original_path', '')
+            cat = get_subcategory(original_path) if original_path else ''
+            w = category_weights.get(cat, 1.0)
+            weights.append(w)
+            category_counts[cat] = category_counts.get(cat, 0) + 1
+
+        # Log category distribution for visibility
+        upsampled = {cat: cnt for cat, cnt in category_counts.items()
+                     if category_weights.get(cat, 1.0) > 1.0}
+        if upsampled:
+            logging.info(f"WeightedRandomSampler category oversampling: "
+                         f"{', '.join(f'{cat} ({cnt} samples, {category_weights[cat]}x)' for cat, cnt in upsampled.items())}")
+
+        return weights
 
     def create_splits(
         self,
@@ -323,18 +453,42 @@ class PreprocessedDatasetManager:
         total_files = len(self.manifest['files'])
         indices = list(range(total_files))
 
-        if shuffle:
-            np.random.seed(random_seed)
-            np.random.shuffle(indices)
+        # Extract labels for stratified splitting
+        labels = [self.manifest['files'][i]['label'] for i in indices]
 
-        # Calculate split sizes
-        train_size = int(total_files * train_ratio)
-        val_size = int(total_files * val_ratio)
+        try:
+            from sklearn.model_selection import train_test_split
 
-        # Create splits
-        train_indices = indices[:train_size]
-        val_indices = indices[train_size:train_size + val_size]
-        test_indices = indices[train_size + val_size:]
+            # Stratified split: train vs (val+test)
+            train_indices, temp_indices, train_labels, temp_labels = train_test_split(
+                indices, labels,
+                test_size=(val_ratio + test_ratio),
+                random_state=random_seed,
+                stratify=labels
+            )
+
+            # Stratified split: val vs test
+            relative_test_ratio = test_ratio / (val_ratio + test_ratio)
+            val_indices, test_indices = train_test_split(
+                temp_indices,
+                test_size=relative_test_ratio,
+                random_state=random_seed,
+                stratify=temp_labels
+            )
+
+            logging.info("Using stratified splitting for consistent class ratios across splits")
+
+        except ImportError:
+            logging.warning("sklearn not available — falling back to random (non-stratified) split")
+            if shuffle:
+                rng = np.random.default_rng(random_seed)
+                rng.shuffle(indices)
+
+            train_size = int(total_files * train_ratio)
+            val_size = int(total_files * val_ratio)
+            train_indices = indices[:train_size]
+            val_indices = indices[train_size:train_size + val_size]
+            test_indices = indices[train_size + val_size:]
 
         logging.info(f"Dataset splits: train={len(train_indices)}, val={len(val_indices)}, test={len(test_indices)}")
 

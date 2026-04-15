@@ -54,8 +54,11 @@ class AcousticDetector:
         max_freq = freqs.max().item()
 
         # Find fundamental frequency in baby cry range (300-600 Hz)
-        cry_f0_min_idx = torch.argmin(torch.abs(freqs - 300))
-        cry_f0_max_idx = torch.argmin(torch.abs(freqs - 600))
+        cry_f0_min_idx = torch.argmin(torch.abs(freqs - 300)).item()
+        cry_f0_max_idx = torch.argmin(torch.abs(freqs - 600)).item()
+        # Ensure min < max to avoid empty backward slices with coarse frequency resolution
+        if cry_f0_min_idx >= cry_f0_max_idx:
+            cry_f0_max_idx = cry_f0_min_idx + 1
 
         # For each time frame, find peaks
         harmonic_scores = []
@@ -66,7 +69,7 @@ class AcousticDetector:
 
             # Find fundamental frequency (strongest peak in 300-600 Hz)
             cry_range_mag = frame_mag[cry_f0_min_idx:cry_f0_max_idx]
-            if cry_range_mag.max() < 1e-6:
+            if len(cry_range_mag) == 0 or cry_range_mag.max() < 1e-6:
                 harmonic_scores.append(0.0)
                 f0_estimates.append(0.0)
                 continue
@@ -269,7 +272,10 @@ class AcousticDetector:
 
         # Phase unwrapping and differentiation for instantaneous frequency
         phase = torch.angle(stft)
-        phase_diff = torch.diff(phase, dim=1)
+        # Unwrap phase to remove ±π discontinuities before differentiation
+        phase_np = phase.numpy()
+        phase_unwrapped = torch.from_numpy(np.unwrap(phase_np, axis=1))
+        phase_diff = torch.diff(phase_unwrapped, dim=1)
 
         # Instantaneous frequency
         inst_freq = phase_diff * self.sample_rate / (2 * np.pi * hop_length)

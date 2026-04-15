@@ -45,6 +45,8 @@ class AudioClassifier:
         from ..model import create_model
 
         try:
+            # weights_only=False required: checkpoints may contain quantized model
+            # objects (not plain state_dicts) that need full pickle deserialization.
             checkpoint = torch.load(model_path, map_location='cpu', weights_only=False)
 
             # Handle different checkpoint formats
@@ -53,23 +55,55 @@ class AudioClassifier:
                 self.model = checkpoint['model']
             else:
                 # Standard format: load state_dict into a fresh model
-                self.model = create_model(self.config)
+                state_dict = checkpoint.get('model_state_dict', checkpoint)
 
-                if 'model_state_dict' in checkpoint:
-                    self.model.load_state_dict(checkpoint['model_state_dict'])
+                # Detect ensemble checkpoint (keys start with "models.N.")
+                ensemble_prefixes = {
+                    k.split('.')[0] + '.' + k.split('.')[1]
+                    for k in state_dict if k.startswith('models.')
+                }
+                if ensemble_prefixes:
+                    import torch.nn as nn
+                    n_models = len(ensemble_prefixes)
+                    logging.info(f"Loading ensemble checkpoint ({n_models} models) for audio filter")
+                    models = nn.ModuleList([
+                        create_model(self.config) for _ in range(n_models)
+                    ])
+                    for i in range(n_models):
+                        prefix = f'models.{i}.'
+                        sub_sd = {
+                            k[len(prefix):]: v
+                            for k, v in state_dict.items()
+                            if k.startswith(prefix)
+                        }
+                        models[i].load_state_dict(sub_sd)
+
+                    class _Ensemble(nn.Module):
+                        def __init__(self, sub_models):
+                            super().__init__()
+                            self.models = sub_models
+
+                        def forward(self, x):
+                            return torch.mean(
+                                torch.stack([m(x) for m in self.models]), dim=0
+                            )
+
+                    self.model = _Ensemble(models)
                 else:
-                    self.model.load_state_dict(checkpoint)
+                    self.model = create_model(self.config)
+                    self.model.load_state_dict(state_dict)
 
             self.model.eval()
             logging.info(f"Classifier model loaded from {model_path}")
-        except Exception as e:
-            print(f"Warning: Could not load model from {model_path}: {e}")
+        except Exception:
+            logging.exception(f"Could not load model from {model_path}")
             self.model = None
 
     def classify_segments(self, audio: torch.Tensor,
                          segment_duration: float = 3.0,
                          overlap: float = 0.5,
-                         use_acoustic_validation: bool = True) -> List[Tuple[float, float, float, Dict]]:
+                         use_acoustic_validation: bool = True,
+                         cry_threshold: float = 0.5) -> List[Tuple[float, float, float, Dict]]:
         """
         Classify audio segments using the trained model with acoustic validation.
 
@@ -78,17 +112,24 @@ class AudioClassifier:
             segment_duration: Duration of each segment in seconds
             overlap: Overlap ratio between segments
             use_acoustic_validation: Whether to apply acoustic feature validation
+            cry_threshold: Probability threshold passed to acoustic validation
 
         Returns:
             List of (start_time, end_time, cry_probability, metadata) tuples
             metadata contains: {'raw_prob', 'calibrated_prob', 'validated', 'rejection_reason'}
         """
         if self.model is None:
-            print("Warning: No model loaded, skipping classification")
+            logging.warning("No model loaded, skipping classification")
             return []
 
         segment_samples = int(segment_duration * self.sample_rate)
         hop_samples = int(segment_samples * (1 - overlap))
+
+        if len(audio) < segment_samples:
+            logging.warning(
+                f"Audio too short for classification ({len(audio)} samples < "
+                f"{segment_samples} required) — returning empty segments"
+            )
 
         segments = []
 
@@ -106,17 +147,17 @@ class AudioClassifier:
                 with torch.no_grad():
                     outputs = self.model(mel_spec)
 
-                    # Apply calibration if available
-                    if self.calibrator is not None:
-                        probabilities = self.calibrator.calibrate_probabilities(outputs)
-                        calibrated_prob = probabilities[0, 1].item() if self.config.NUM_CLASSES == 2 else probabilities[0, 0].item()
-                    else:
-                        probabilities = torch.softmax(outputs, dim=1)
-                        calibrated_prob = probabilities[0, 1].item() if self.config.NUM_CLASSES == 2 else probabilities[0, 0].item()
-
-                    # Store raw probability (before calibration)
+                    # Raw probability from logits — computed once before any calibration
+                    # to avoid accidentally applying softmax to already-calibrated outputs.
                     raw_probabilities = torch.softmax(outputs, dim=1)
                     raw_prob = raw_probabilities[0, 1].item() if self.config.NUM_CLASSES == 2 else raw_probabilities[0, 0].item()
+
+                    # Apply calibration if available; otherwise raw == calibrated
+                    if self.calibrator is not None:
+                        cal_probabilities = self.calibrator.calibrate_probabilities(outputs)
+                        calibrated_prob = cal_probabilities[0, 1].item() if self.config.NUM_CLASSES == 2 else cal_probabilities[0, 0].item()
+                    else:
+                        calibrated_prob = raw_prob
 
                 start_time = start_idx / self.sample_rate
                 end_time = end_idx / self.sample_rate
@@ -141,7 +182,7 @@ class AudioClassifier:
                     is_valid, reason = validate_cry_binary(
                         acoustic_features,
                         calibrated_prob,
-                        threshold=0.5
+                        threshold=cry_threshold
                     )
 
                     metadata['validated'] = is_valid
@@ -157,8 +198,8 @@ class AudioClassifier:
 
                 segments.append((start_time, end_time, final_prob, metadata))
 
-            except Exception as e:
-                print(f"Error processing segment {start_idx}-{end_idx}: {e}")
+            except Exception:
+                logging.exception(f"Error processing segment {start_idx}-{end_idx}")
                 continue
 
         return segments
@@ -176,6 +217,6 @@ class AudioClassifier:
         if os.path.exists(calibrator_path):
             self.calibrator = ConfidenceCalibrator(method="temperature")
             self.calibrator.load(calibrator_path, num_classes=num_classes)
-            print(f"Loaded calibrator from {calibrator_path}")
+            logging.info(f"Loaded calibrator from {calibrator_path}")
         else:
-            print(f"Warning: Calibrator not found at {calibrator_path}")
+            logging.warning(f"Calibrator not found at {calibrator_path}")

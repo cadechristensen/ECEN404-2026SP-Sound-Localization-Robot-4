@@ -20,8 +20,8 @@ from pathlib import Path
 from typing import Tuple, List
 
 from src.config import Config
-from src.audio_filter import BabyCryAudioFilter
-from deployment.raspberry_pi.multichannel_detector import EnhancedSNRComputation
+from src.audio_filtering import BabyCryAudioFilter
+from deployment.multichannel_detector import EnhancedSNRComputation
 from scripts.testing.test_my_audio import visualize_filtering_pipeline, _merge_overlapping_segments
 
 
@@ -303,7 +303,7 @@ def main():
 Examples:
   python test_multichannel_audio.py audio.wav
   python test_multichannel_audio.py audio.wav --model path/to/model.pth
-  python test_multichannel_audio.py audio.wav --threshold 0.7 --voting logical_or
+  python test_multichannel_audio.py audio.wav --threshold 0.92 --voting logical_or
   python test_multichannel_audio.py audio.wav --plot
         """
     )

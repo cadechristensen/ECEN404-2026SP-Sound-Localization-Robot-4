@@ -1,22 +1,20 @@
 # Function Calls for Obstacle Avoidance (UART to ESP32)
 
 import math
+import time
 import logging
 from typing import Optional
 
 logger = logging.getLogger(__name__)
 
-# Feet to meters conversion factor
-FT_TO_M = 0.3048
-
 
 class ObstacleAvoidance:
     """
-    Pi-side UART communication with the ESP32 running ObstacleAvoidanceAlgorithm.
+    Pi-side UART communication with the ESP32.
 
     Protocol (Pi -> ESP32):
-        "NAV x=<float> y=<float> d=<float>\n"
-        where x, y are Cartesian target coords (meters) and d is straight-line distance (meters).
+        "NAV angle=<float> dist_ft=<float>\n"
+        where angle is bearing in degrees, dist_ft is distance in feet.
 
     Protocol (ESP32 -> Pi):
         "READY\n"    — robot arrived at baby
@@ -24,13 +22,18 @@ class ObstacleAvoidance:
         "RELISTEN\n" — dead end hit, need re-localization
     """
 
-    VALID_RESPONSES = {'READY', 'OBSTACLE', 'RELISTEN'}
+    # Responses that end the wait loop
+    TERMINAL_RESPONSES = {'READY', 'RELISTEN', 'BUMPED'}
 
     def __init__(self, port: str = '/dev/serial0', baudrate: int = 115200):
         self._port_name = port
         self._baudrate = baudrate
-        self._serial: Optional[serial.Serial] = None
+        self._serial = None
         self._open()
+
+    @property
+    def port(self) -> str:
+        return self._port_name
 
     def _open(self) -> None:
         import serial
@@ -47,51 +50,73 @@ class ObstacleAvoidance:
         """
         Send a navigation command to the ESP32.
 
-        Converts DOAnet direction (degrees, 0=front, 90=right, clockwise)
-        and distance (feet) into Cartesian x, y (meters) for the ESP32.
+        Args:
+            direction_deg: Direction to sound source in degrees.
+            distance_ft: Distance to sound source in feet.
 
-        Coordinate convention (matching ESP32 parser):
-            x = -sin(deg) * distance   (positive x = left)
-            y =  cos(deg) * distance   (positive y = forward)
+        Raises:
+            ValueError: If direction_deg or distance_ft is non-finite or out of range.
         """
-        distance_m = distance_ft * FT_TO_M
-        rad = math.radians(direction_deg)
-
-        x = -math.sin(rad) * distance_m
-        y = math.cos(rad) * distance_m
-
-        cmd = f"NAV x={x:.3f} y={y:.3f} d={distance_m:.3f}\n"
+        if not math.isfinite(direction_deg) or not math.isfinite(distance_ft):
+            raise ValueError(
+                f"NAV values must be finite: angle={direction_deg}, dist_ft={distance_ft}"
+            )
+        if distance_ft <= 0:
+            raise ValueError(f"distance_ft must be positive, got {distance_ft}")
+        #cmd = f"NAV x={direction_deg:.3f} y={distance_ft:.3f} d={distance_ft:.3f}\n"
+        cmd = f"NAV angle={direction_deg:.3f} dist_ft={distance_ft:.3f}\n"
         self._serial.write(cmd.encode('utf-8'))
         logger.info(f"Sent to ESP32: {cmd.strip()}")
 
     def wait_for_response(self, timeout: float = 60.0) -> Optional[str]:
         """
-        Block until the ESP32 sends a response line.
+        Block until the ESP32 sends READY or RELISTEN.
+
+        Continuously reads lines, ignoring empty reads and informational
+        messages (e.g. OBSTACLE), until a terminal response or timeout.
 
         Args:
             timeout: Maximum seconds to wait.
 
         Returns:
-            One of "READY", "OBSTACLE", "RELISTEN", or None on timeout.
+            "READY", "RELISTEN", "BUMPED", or None on timeout.
         """
-        self._serial.timeout = timeout
+        deadline = time.monotonic() + timeout
+        while time.monotonic() < deadline:
+            if not self._serial or not self._serial.is_open:
+                return None
+            try:
+                raw = self._serial.readline()
+            except (OSError, TypeError):
+                return None
+            if not raw:
+                logger.debug(f"ESP32 no response (serial timeout {timeout:.1f}s)")
+                continue
+
+            response = raw.decode('utf-8', errors='replace').strip()
+            if not response:
+                continue
+
+            logger.info(f"ESP32 RX: {response}")
+
+            if response in self.TERMINAL_RESPONSES:
+                return response
+
+            # Non-terminal (e.g. OBSTACLE) — ESP32 is alive, keep waiting
+            logger.info(f"ESP32 sent '{response}' (non-terminal), still waiting...")
+
+        # Timeout — caller handles the retry/escalation logic
+        return None
+
+    def send_cancel(self) -> None:
+        """Send CANCEL to stop the ESP32 immediately."""
+        if not self._serial or not self._serial.is_open:
+            return
         try:
-            raw = self._serial.readline()
-        finally:
-            self._serial.timeout = 1  # restore default
-
-        if not raw:
-            logger.warning(f"UART read timed out after {timeout}s")
-            return None
-
-        response = raw.decode('utf-8', errors='replace').strip()
-        logger.info(f"ESP32 response: {response}")
-
-        if response in self.VALID_RESPONSES:
-            return response
-
-        logger.warning(f"Unexpected UART response: {response}")
-        return response
+            self._serial.write("CANCEL\n".encode('utf-8'))
+            logger.info("Sent CANCEL to ESP32")
+        except (OSError, TypeError):
+            logger.debug("Could not send CANCEL — port already closed")
 
     def close(self) -> None:
         """Close the serial port."""

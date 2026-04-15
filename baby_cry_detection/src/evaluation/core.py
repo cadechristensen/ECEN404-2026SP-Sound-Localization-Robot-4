@@ -357,17 +357,17 @@ class ModelEvaluator:
 
         return results
 
-    def plot_confusion_matrix(self, cm: np.ndarray, results_dir: Path):
+    def plot_confusion_matrix(self, cm: np.ndarray, results_dir: Path, dataset_name: str = "test"):
         """Plot and save confusion matrix."""
-        plot_confusion_matrix(cm, self.class_labels, results_dir)
+        plot_confusion_matrix(cm, self.class_labels, results_dir, dataset_name)
 
-    def plot_roc_curve(self, y_true: np.ndarray, y_proba: np.ndarray, results_dir: Path):
+    def plot_roc_curve(self, y_true: np.ndarray, y_proba: np.ndarray, results_dir: Path, dataset_name: str = "test"):
         """Plot and save ROC curve."""
-        plot_roc_curve(y_true, y_proba, self.class_labels, results_dir)
+        plot_roc_curve(y_true, y_proba, self.class_labels, results_dir, dataset_name)
 
-    def plot_precision_recall_curve(self, y_true: np.ndarray, y_proba: np.ndarray, results_dir: Path):
+    def plot_precision_recall_curve(self, y_true: np.ndarray, y_proba: np.ndarray, results_dir: Path, dataset_name: str = "test"):
         """Plot and save Precision-Recall curve."""
-        plot_precision_recall_curve(y_true, y_proba, self.class_labels, results_dir)
+        plot_precision_recall_curve(y_true, y_proba, self.class_labels, results_dir, dataset_name)
 
     def plot_training_history(self, history: Dict, results_dir: Path):
         """Plot training history."""
@@ -378,8 +378,8 @@ class ModelEvaluator:
         class_counts = {label: 0 for label in self.class_labels}
 
         for batch_data in data_loader:
-            if len(batch_data) == 3:
-                _, labels, _ = batch_data
+            if len(batch_data) >= 3:
+                labels = batch_data[1]
             else:
                 _, labels = batch_data
 
@@ -517,9 +517,9 @@ class ModelEvaluator:
         metrics = self.calculate_metrics(y_true, y_pred, y_proba)
 
         cm = np.array(metrics['confusion_matrix'])
-        self.plot_confusion_matrix(cm, results_dir)
-        self.plot_roc_curve(y_true, y_proba, results_dir)
-        self.plot_precision_recall_curve(y_true, y_proba, results_dir)
+        self.plot_confusion_matrix(cm, results_dir, dataset_name)
+        self.plot_roc_curve(y_true, y_proba, results_dir, dataset_name)
+        self.plot_precision_recall_curve(y_true, y_proba, results_dir, dataset_name)
         self.plot_class_distribution(data_loader, results_dir, dataset_name)
 
         if len(self.class_labels) == 2:
@@ -570,6 +570,34 @@ class ModelEvaluator:
             logging.info(f"Brier Score: {metrics['brier_score']:.4f}")
             logging.info(f"Expected Calibration Error (ECE): {metrics['expected_calibration_error']:.4f}")
             logging.info(f"Maximum Calibration Error (MCE): {metrics['maximum_calibration_error']:.4f}")
+
+        dt_metrics = metrics.get('deployment_threshold_metrics')
+        if dt_metrics:
+            thresh = dt_metrics['deployment_threshold']
+            logging.info(f"\nDEPLOYMENT THRESHOLD METRICS (threshold={thresh}):")
+            above_count = dt_metrics['above_threshold_count']
+            above_rate = dt_metrics['above_threshold_rate']
+            logging.info(
+                f"  Samples above threshold: {above_count} ({above_rate:.1%} of eval set)"
+            )
+            precision = dt_metrics['precision_at_threshold']
+            if precision is not None:
+                logging.info(f"  Precision at threshold:  {precision:.4f} ({precision:.1%} of above-threshold are true cries)")
+            else:
+                logging.info("  Precision at threshold:  N/A (no samples above threshold)")
+            dz_low = dt_metrics['danger_zone_low']
+            dz_count = dt_metrics['danger_zone_count']
+            dz_acc = dt_metrics['danger_zone_accuracy']
+            if dz_acc is not None:
+                logging.info(
+                    f"  Danger zone [{dz_low}, {thresh}) accuracy: "
+                    f"{dz_acc:.4f} ({dz_acc:.1%} true cries among {dz_count} samples — "
+                    f"{'threshold placement looks justified' if dz_acc < 0.5 else 'WARNING: many true cries in danger zone'})"
+                )
+            else:
+                logging.info(
+                    f"  Danger zone [{dz_low}, {thresh}): no samples in this range"
+                )
 
         if bootstrap_results and 'accuracy_ci_lower' in bootstrap_results:
             logging.info(f"\nBOOTSTRAP CONFIDENCE INTERVALS ({bootstrap_confidence_level*100:.0f}%):")

@@ -30,6 +30,10 @@ class MultichannelProcessor:
         """
         self.sample_rate = sample_rate
         self.num_channels = num_channels
+        # Cached resamplers keyed by (orig_rate, target_rate).
+        # T.Resample pre-computes a polyphase filter kernel on construction;
+        # recreating it on every call wastes CPU recomputing the same kernel.
+        self._resamplers: dict = {}
 
     def select_best_channel_by_snr(
         self,
@@ -56,7 +60,7 @@ class MultichannelProcessor:
         if audio.dim() == 1:
             return 0, np.array([0.0])
 
-        audio_np = audio.numpy() if isinstance(audio, torch.Tensor) else audio
+        audio_np = audio.detach().cpu().numpy() if isinstance(audio, torch.Tensor) else audio
         num_channels = audio_np.shape[1]
         snr_scores = np.zeros(num_channels)
 
@@ -89,6 +93,7 @@ class MultichannelProcessor:
             audio: Multi-channel input audio tensor (num_samples, num_channels)
             cry_segments: List of (start_time, end_time) tuples in seconds
             merge_segments_fn: Function to merge overlapping segments
+                (injected to avoid a circular import with utils.py)
 
         Returns:
             Concatenated cry-only multi-channel audio tensor
@@ -160,7 +165,10 @@ class MultichannelProcessor:
         if orig_sample_rate == target_sample_rate:
             return audio
 
-        resampler = T.Resample(orig_sample_rate, target_sample_rate)
+        key = (orig_sample_rate, target_sample_rate)
+        if key not in self._resamplers:
+            self._resamplers[key] = T.Resample(orig_sample_rate, target_sample_rate)
+        resampler = self._resamplers[key]
 
         if audio.dim() > 1:
             # Multi-channel resample - process each channel separately
@@ -209,6 +217,6 @@ class MultichannelProcessor:
 
         num_channels = audio.shape[1]
         if num_channels != self.num_channels:
-            return True, f"Warning: Expected {self.num_channels} channels, got {num_channels}"
+            return False, f"Expected {self.num_channels} channels, got {num_channels}"
 
         return True, f"Valid multi-channel audio: {num_channels} channels"

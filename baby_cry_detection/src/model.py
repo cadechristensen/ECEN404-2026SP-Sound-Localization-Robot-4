@@ -207,8 +207,10 @@ class CNNFeatureExtractor(nn.Module):
         # Calculate the output size after CNN layers
         self.output_channels = config.CNN_CHANNELS[-1]
 
-        # Adaptive pooling to ensure consistent output size
-        self.adaptive_pool = nn.AdaptiveAvgPool2d((4, None))  # Pool frequency dimension to 4
+        # Note: nn.AdaptiveAvgPool2d((4, None)) uses None for the time dimension which
+        # is not representable in ONNX opset < 13 and breaks TorchScript tracing.
+        # We remove the module-level pool and apply F.adaptive_avg_pool2d with an
+        # explicit (freq, time) tuple in forward() instead — ONNX-safe and equivalent.
 
         # Projection to transformer dimension
         self.projection = nn.Linear(self.output_channels * 4, config.D_MODEL)
@@ -230,8 +232,11 @@ class CNNFeatureExtractor(nn.Module):
         # x shape: (batch_size, channels, height, width)
         batch_size, channels, height, width = x.size()
 
-        # Adaptive pooling to standardize frequency dimension
-        x = self.adaptive_pool(x)  # Shape: (batch_size, channels, 4, width)
+        # Adaptive pooling to standardize frequency dimension.
+        # Use F.adaptive_avg_pool2d with an explicit (freq, time) tuple so the
+        # output_size is fully concrete at trace time — ONNX-safe alternative to
+        # nn.AdaptiveAvgPool2d((4, None)) which uses an opaque None sentinel.
+        x = F.adaptive_avg_pool2d(x, (4, x.size(-1)))  # Shape: (batch_size, channels, 4, width)
 
         # Reshape for time-series processing
         # Flatten frequency and channel dimensions
@@ -291,25 +296,33 @@ class TemporalPatternAttention(nn.Module):
     Models burst-pause-burst rhythms characteristic of baby cries.
     """
 
-    def __init__(self, d_model: int, num_patterns: int = 4):
+    def __init__(self, d_model: int, num_patterns: int = 4, num_heads: int = 4):
         """
         Initialize temporal pattern attention.
 
         Args:
             d_model: Model dimension
             num_patterns: Number of temporal patterns to learn (e.g., different cry types)
+            num_heads: Number of attention heads (must evenly divide d_model).
+                       Passed from config.N_HEADS via TransformerEncoder to keep
+                       consistent with the rest of the model (was hardcoded to 4).
         """
         super().__init__()
         self.d_model = d_model
         self.num_patterns = num_patterns
 
-        # Learnable temporal pattern queries
-        self.pattern_queries = nn.Parameter(torch.randn(num_patterns, d_model))
+        # Learnable temporal pattern queries.
+        # Scale down initialization: std=1.0 with d_model=256 gives norm≈16,
+        # much larger than typical LayerNorm outputs (≈1).  Use 0.02 scale to
+        # keep queries in the same range as the rest of the network at init.
+        self.pattern_queries = nn.Parameter(torch.randn(num_patterns, d_model) * 0.02)
 
-        # Multi-head attention for pattern matching
+        # Multi-head attention for pattern matching.
+        # num_heads is now derived from config (via TransformerEncoder) so it stays
+        # consistent with the main transformer and respects d_model divisibility.
         self.pattern_attention = nn.MultiheadAttention(
             embed_dim=d_model,
-            num_heads=4,
+            num_heads=num_heads,
             dropout=0.1,
             batch_first=True
         )
@@ -388,10 +401,13 @@ class TransformerEncoder(nn.Module):
             num_layers=config.N_LAYERS
         )
 
-        # Temporal pattern attention (NEW)
+        # Temporal pattern attention (NEW).
+        # Pass num_heads from config so it matches the main transformer and stays
+        # divisible into d_model — previously hardcoded to 4 inside the module.
         self.temporal_pattern_attn = TemporalPatternAttention(
             d_model=config.D_MODEL,
-            num_patterns=4  # Learn 4 different cry patterns
+            num_patterns=4,  # Learn 4 different cry patterns
+            num_heads=config.N_HEADS,
         )
 
         # Layer normalization
@@ -445,14 +461,16 @@ class BabyCryClassifier(nn.Module):
     Combines CNN feature extraction with Transformer temporal modeling.
     """
 
-    def __init__(self, config: Config = Config()):
+    def __init__(self, config: Optional[Config] = None):
         """
         Initialize the baby cry classifier.
 
         Args:
-            config: Configuration object
+            config: Configuration object. Defaults to Config().
         """
         super().__init__()
+        if config is None:
+            config = Config()
         self.config = config
 
         # CNN feature extractor
@@ -476,9 +494,12 @@ class BabyCryClassifier(nn.Module):
             nn.Linear(config.D_MODEL // 4, num_classes)  # Dynamic number of classes
         )
 
-        # QUICK WIN 5: Temperature scaling parameter (learnable)
-        # Initialized to 1.0 (no scaling), will be learned during training
-        self.temperature = nn.Parameter(torch.ones(1))
+        # Temperature scaling — fixed non-learnable buffer.
+        # A learnable temperature trained jointly with cross-entropy is an anti-pattern:
+        # it can drive the value toward zero and counteract label smoothing.
+        # register_buffer keeps it in state_dict but excludes it from optimizer updates.
+        # For post-hoc calibration, load a calibrated value from a checkpoint.
+        self.register_buffer('temperature', torch.ones(1))
 
         # Initialize weights
         self.apply(self._init_weights)
@@ -513,8 +534,7 @@ class BabyCryClassifier(nn.Module):
             x: Input tensor of shape (batch_size, 1, n_mels, time_steps)
 
         Returns:
-            Logits tensor of shape (batch_size, num_classes)
-            QUICK WIN 5: Logits are scaled by learnable temperature parameter
+            Raw logits tensor of shape (batch_size, num_classes)
         """
         # CNN feature extraction
         features = self.cnn_extractor(x)  # Shape: (batch_size, time_steps, d_model)
@@ -528,13 +548,12 @@ class BabyCryClassifier(nn.Module):
         # Classification
         logits = self.classifier(pooled)  # Shape: (batch_size, 2)
 
-        # QUICK WIN 5: Apply temperature scaling
-        # Temperature > 1 makes the model less confident (smoother probabilities)
-        # Temperature < 1 makes the model more confident (sharper probabilities)
-        # Temperature = 1 means no scaling (default)
-        scaled_logits = logits / self.temperature
+        # NOTE: Temperature scaling is NOT applied here. Post-hoc calibration temperature
+        # is applied externally (TemperatureScaledModel in calibration.py, or manually in
+        # deployment code). The self.temperature buffer is kept for checkpoint backward
+        # compatibility but is unused in forward().
 
-        return scaled_logits
+        return logits
 
     def get_feature_maps(self, x: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
         """
@@ -555,16 +574,18 @@ class BabyCryClassifier(nn.Module):
         return cnn_features, transformer_features
 
 
-def create_model(config: Config = Config()) -> BabyCryClassifier:
+def create_model(config: Optional[Config] = None) -> BabyCryClassifier:
     """
     Create and return a baby cry classifier model.
 
     Args:
-        config: Configuration object
+        config: Configuration object. Defaults to Config().
 
     Returns:
         Initialized model
     """
+    if config is None:
+        config = Config()
     model = BabyCryClassifier(config)
     return model
 

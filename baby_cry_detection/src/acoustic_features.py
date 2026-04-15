@@ -11,10 +11,21 @@ These features help distinguish baby cries from other sounds based on
 acoustic properties rather than learned patterns.
 """
 
+import warnings
 import torch
 import numpy as np
-from typing import Tuple, Dict, Optional
+from typing import Any, Tuple, Dict, Optional
 import librosa
+
+try:
+    from .config import Config
+except ImportError:
+    import sys
+    from pathlib import Path as _Path
+    _src_dir = _Path(__file__).parent
+    if str(_src_dir) not in sys.path:
+        sys.path.insert(0, str(_src_dir))
+    from config import Config  # type: ignore
 
 
 class AcousticFeatureExtractor:
@@ -27,11 +38,16 @@ class AcousticFeatureExtractor:
         Args:
             sample_rate: Audio sample rate in Hz
         """
+        assert sample_rate == Config.SAMPLE_RATE, (
+            f"sample_rate {sample_rate} does not match Config.SAMPLE_RATE "
+            f"{Config.SAMPLE_RATE}. Pass the correct rate or update Config."
+        )
         self.sample_rate = sample_rate
 
-        # Baby cry F0 range (Hz)
-        self.f0_min = 250
-        self.f0_max = 700
+        # Baby cry F0 range — kept in sync with Config to avoid three-way divergence
+        # (previously diverged: __init__=250/700, validate_cry_binary=250/800, config=300/600)
+        self.f0_min = Config.CRY_F0_MIN
+        self.f0_max = Config.CRY_F0_MAX
 
         # Typical baby cry characteristics
         self.cry_hnr_min = 0.4  # Minimum harmonic-to-noise ratio
@@ -54,10 +70,19 @@ class AcousticFeatureExtractor:
             - f0_contour: Fundamental frequency values (Hz), NaN for unvoiced
             - voiced_flag: Boolean array indicating voiced segments
         """
-        # Convert to numpy if torch tensor
+        # Ensure mono — pyin does not support multichannel input
         if isinstance(audio, torch.Tensor):
-            audio_np = audio.cpu().numpy()
+            if audio.ndim > 1:
+                raise ValueError(
+                    f"extract_pitch_librosa expects mono audio, got shape {audio.shape}. "
+                    "Average or select a channel before calling."
+                )
+            audio_np = audio.detach().cpu().numpy()
         else:
+            if audio.ndim > 1:
+                raise ValueError(
+                    f"extract_pitch_librosa expects mono audio, got shape {audio.shape}."
+                )
             audio_np = audio
 
         # Use librosa's pyin for robust pitch tracking
@@ -86,41 +111,42 @@ class AcousticFeatureExtractor:
         Returns:
             Pitch track tensor (Hz), 0 for unvoiced frames
         """
-        pitch_track = []
-
         # Minimum and maximum lag for baby cry F0 range
         min_lag = int(self.sample_rate / self.f0_max)
         max_lag = int(self.sample_rate / self.f0_min)
 
-        for start_idx in range(0, len(audio) - frame_length, hop_length):
-            frame = audio[start_idx:start_idx + frame_length]
+        # Build frames matrix in one shot: (n_frames, frame_length).
+        # audio.unfold avoids an explicit Python loop over frames.
+        frames = audio.unfold(0, frame_length, hop_length)  # (n_frames, frame_length)
+        n_frames = frames.shape[0]
 
-            # Autocorrelation using convolution
-            autocorr = torch.nn.functional.conv1d(
-                frame.unsqueeze(0).unsqueeze(0),
-                frame.flip(0).unsqueeze(0).unsqueeze(0),
-                padding=frame_length - 1
-            )[0, 0, frame_length-1:]
+        # FFT-based autocorrelation — zero-pad to 2*frame_length for aperiodic
+        # (linear) correlation, which avoids circular wrap-around artifacts.
+        # Complexity: O(N log N) per frame vs O(N²) for the conv1d approach.
+        X = torch.fft.rfft(frames, n=2 * frame_length, dim=1)
+        autocorr_all = torch.fft.irfft(X * X.conj(), n=2 * frame_length, dim=1)[:, :frame_length]
 
-            # Normalize autocorrelation
-            autocorr = autocorr / (autocorr[0] + 1e-8)
+        # Normalize each frame by its zero-lag value
+        autocorr_all = autocorr_all / (autocorr_all[:, 0:1] + 1e-8)
 
-            # Find peak in baby cry F0 range
-            if max_lag < len(autocorr):
-                autocorr_range = autocorr[min_lag:max_lag]
+        if max_lag < frame_length:
+            # Slice to baby-cry lag range for all frames at once
+            range_autocorr = autocorr_all[:, min_lag:max_lag]  # (n_frames, n_lags)
+            max_vals = range_autocorr.max(dim=1).values        # (n_frames,)
+            peak_offsets = range_autocorr.argmax(dim=1)         # (n_frames,)
+            peak_lags = peak_offsets + min_lag                  # absolute lag index
 
-                # Require minimum autocorrelation strength
-                if autocorr_range.max() > 0.3:  # Voiced threshold
-                    peak_lag = min_lag + torch.argmax(autocorr_range).item()
-                    pitch = self.sample_rate / peak_lag
-                else:
-                    pitch = 0.0  # Unvoiced
-            else:
-                pitch = 0.0
+            # Voiced: autocorrelation peak above threshold AND non-zero lag (guards /0)
+            voiced = (max_vals > 0.3) & (peak_lags > 0)
+            pitch_track = torch.where(
+                voiced,
+                torch.tensor(float(self.sample_rate), device=audio.device) / peak_lags.float(),
+                torch.zeros(n_frames, device=audio.device)
+            )
+        else:
+            pitch_track = torch.zeros(n_frames, device=audio.device)
 
-            pitch_track.append(pitch)
-
-        return torch.tensor(pitch_track)
+        return pitch_track
 
     def compute_harmonic_to_noise_ratio(self, audio: torch.Tensor,
                                        f0_track: Optional[torch.Tensor] = None,
@@ -145,41 +171,33 @@ class AcousticFeatureExtractor:
         if f0_track is None:
             f0_track = self.extract_pitch_autocorrelation(audio, frame_length, hop_length)
 
+        n_frames = f0_track.shape[0]
+
+        # Batch-compute autocorrelation for all frames — avoids per-frame conv1d loop
+        frames = audio.unfold(0, frame_length, hop_length)[:n_frames]  # (n_frames, frame_length)
+        X = torch.fft.rfft(frames, n=2 * frame_length, dim=1)
+        autocorr_all = torch.fft.irfft(X * X.conj(), n=2 * frame_length, dim=1)[:, :frame_length]
+        autocorr_all = autocorr_all / (autocorr_all[:, 0:1] + 1e-8)
+
         hnr_values = []
 
         for frame_idx, f0 in enumerate(f0_track):
-            start_idx = frame_idx * hop_length
-            end_idx = start_idx + frame_length
+            f0_val = f0.item()  # 0-dim tensor → Python float (avoids implicit bool conversion)
 
-            if end_idx > len(audio):
-                break
-
-            frame = audio[start_idx:end_idx]
-
-            # If unvoiced (f0 == 0), HNR is 0
-            if f0 < self.f0_min or f0 > self.f0_max:
+            if f0_val == 0.0:
+                # Unvoiced frame — pitch extractor found no periodic content
                 hnr_values.append(0.0)
                 continue
 
-            # Compute autocorrelation
-            autocorr = torch.nn.functional.conv1d(
-                frame.unsqueeze(0).unsqueeze(0),
-                frame.flip(0).unsqueeze(0).unsqueeze(0),
-                padding=frame_length - 1
-            )[0, 0, frame_length-1:]
+            if f0_val < self.f0_min or f0_val > self.f0_max:
+                # F0 detected but outside baby-cry range — meaningless for HNR here
+                hnr_values.append(0.0)
+                continue
 
-            # Normalize
-            autocorr = autocorr / (autocorr[0] + 1e-8)
+            pitch_period_samples = int(self.sample_rate / f0_val)
 
-            # HNR is estimated from autocorrelation at the pitch period
-            pitch_period_samples = int(self.sample_rate / f0)
-
-            if pitch_period_samples < len(autocorr):
-                # Harmonic strength is autocorrelation at pitch period
-                harmonic_strength = autocorr[pitch_period_samples].item()
-
-                # Convert to HNR (0-1 scale)
-                # High autocorrelation at pitch period = strong harmonics
+            if 0 < pitch_period_samples < frame_length:
+                harmonic_strength = autocorr_all[frame_idx, pitch_period_samples].item()
                 hnr = max(0.0, min(1.0, harmonic_strength))
             else:
                 hnr = 0.0
@@ -198,9 +216,14 @@ class AcousticFeatureExtractor:
         Useful for distinguishing cry from noise and other sounds.
         Baby cries typically have moderate ZCR (not too low, not too high).
 
+        Note: ZCR uses shorter frames (default 512/256) than pitch/HNR features
+        (2048/512). This is intentional — ZCR captures fine-grained temporal
+        changes better at shorter scales — but callers should be aware that the
+        ZCR frame count will differ from the pitch/HNR frame count.
+
         Args:
             audio: Input audio tensor
-            frame_length: Frame size for analysis
+            frame_length: Frame size for analysis (default 512, shorter than pitch frames)
             hop_length: Hop length between frames
 
         Returns:
@@ -211,8 +234,10 @@ class AcousticFeatureExtractor:
         for start_idx in range(0, len(audio) - frame_length, hop_length):
             frame = audio[start_idx:start_idx + frame_length]
 
-            # Count sign changes
-            signs = torch.sign(frame)
+            # Add a tiny offset before sign() so that exact-zero samples are assigned
+            # a consistent sign; torch.sign(0.0) == 0.0 would otherwise produce
+            # spurious zero-crossings when silence-padded frames are processed.
+            signs = torch.sign(frame + 1e-10)
             sign_changes = torch.abs(torch.diff(signs))
             zcr = torch.sum(sign_changes) / (2.0 * len(frame))
 
@@ -236,32 +261,34 @@ class AcousticFeatureExtractor:
         Returns:
             Spectral centroid values per frame (Hz)
         """
-        # Compute STFT
+        # Hann window required for proper WOLA reconstruction and to reduce
+        # spectral leakage. Without it, rectangular windowing inflates centroid values.
+        window = torch.hann_window(frame_length, device=audio.device)
+
         stft = torch.stft(
             audio,
             n_fft=frame_length,
             hop_length=hop_length,
+            window=window,
             return_complex=True
         )
 
-        magnitude = torch.abs(stft)
-        freqs = torch.fft.fftfreq(frame_length, 1/self.sample_rate)[:frame_length//2 + 1]
+        magnitude = torch.abs(stft)  # (n_bins, n_frames)
+        n_bins = frame_length // 2 + 1
+        # torch.linspace is device-aware; torch.fft.fftfreq always returns a CPU tensor
+        # regardless of input device, which would crash on CUDA audio.
+        freqs = torch.linspace(0, self.sample_rate / 2, n_bins, device=audio.device)
 
-        # Compute weighted average frequency
-        centroids = []
-        for frame_idx in range(magnitude.shape[1]):
-            frame_mag = magnitude[:, frame_idx]
+        # Vectorized weighted average over the frequency axis — avoids per-frame loop
+        total_mag = magnitude.sum(dim=0)             # (n_frames,)
+        weighted = (freqs.unsqueeze(1) * magnitude).sum(dim=0)  # (n_frames,)
+        centroids = torch.where(
+            total_mag > 1e-8,
+            weighted / total_mag,
+            torch.zeros_like(total_mag)
+        )
 
-            # Weighted average
-            total_mag = torch.sum(frame_mag)
-            if total_mag > 1e-8:
-                centroid = torch.sum(freqs * frame_mag) / total_mag
-            else:
-                centroid = 0.0
-
-            centroids.append(centroid.item())
-
-        return torch.tensor(centroids)
+        return centroids
 
     def analyze_temporal_regularity(self, audio: torch.Tensor,
                                    frame_length: int = 2048,
@@ -270,7 +297,6 @@ class AcousticFeatureExtractor:
         Analyze temporal regularity of the audio.
 
         Baby cries have quasi-periodic structure with regular cry bursts.
-        Returns regularity score (0-1, higher = more regular).
 
         Args:
             audio: Input audio tensor
@@ -278,30 +304,23 @@ class AcousticFeatureExtractor:
             hop_length: Hop length between frames
 
         Returns:
-            Regularity score (0-1)
+            Regularity score in [-1, 1]. Positive values indicate periodic energy
+            patterns (typical of cry bursts); negative values indicate anti-periodic
+            patterns (e.g. alternating loud/quiet frames).
         """
-        # Compute short-term energy
-        energy = []
-        for start_idx in range(0, len(audio) - frame_length, hop_length):
-            frame = audio[start_idx:start_idx + frame_length]
-            frame_energy = torch.mean(frame ** 2).item()
-            energy.append(frame_energy)
-
-        energy = torch.tensor(energy)
+        # Vectorized short-term energy — avoids a Python loop over frames
+        frames = audio.unfold(0, frame_length, hop_length)  # (n_frames, frame_length)
+        energy = frames.pow(2).mean(dim=1)  # (n_frames,)
 
         if len(energy) < 10:
             return 0.0
 
-        # Autocorrelation of energy envelope
         energy_norm = (energy - energy.mean()) / (energy.std() + 1e-8)
 
-        # Compute autocorrelation
-        autocorr = torch.nn.functional.conv1d(
-            energy_norm.unsqueeze(0).unsqueeze(0),
-            energy_norm.flip(0).unsqueeze(0).unsqueeze(0),
-            padding=len(energy_norm) - 1
-        )[0, 0, len(energy_norm)-1:]
-
+        # FFT-based autocorrelation of the energy envelope — O(N log N) vs O(N²)
+        n = len(energy_norm)
+        X = torch.fft.rfft(energy_norm, n=2 * n)
+        autocorr = torch.fft.irfft(X * X.conj(), n=2 * n)[:n]
         autocorr = autocorr / (autocorr[0] + 1e-8)
 
         # Look for periodicity in 0.5-3 second range (typical cry burst rate)
@@ -314,11 +333,13 @@ class AcousticFeatureExtractor:
         else:
             regularity = 0.0
 
-        return max(0.0, min(1.0, regularity))
+        # Return raw value in [-1, 1] — negative autocorrelation (anti-periodic signal)
+        # is meaningful and should not be silently clipped to 0.
+        return regularity
 
     def extract_all_features(self, audio: torch.Tensor,
                            frame_length: int = 2048,
-                           hop_length: int = 512) -> Dict[str, torch.Tensor]:
+                           hop_length: int = 512) -> Dict[str, Any]:
         """
         Extract all acoustic features in one pass.
 
@@ -416,12 +437,12 @@ def validate_cry_binary(features: Dict[str, float],
     Returns:
         Tuple of (is_valid, rejection_reason)
     """
-    # Rule 1: Verify pitch is in typical baby cry range
+    # Rule 1: Verify pitch is in typical baby cry range (Config.CRY_F0_MIN/MAX)
     if features['pitch_mean'] > 0:
-        if features['pitch_mean'] < 250:
-            return False, "Pitch too low (< 250 Hz) - likely adult or environmental"
-        if features['pitch_mean'] > 800:
-            return False, "Pitch too high (> 800 Hz) - likely not baby cry"
+        if features['pitch_mean'] < Config.CRY_F0_MIN:
+            return False, f"Pitch too low (< {Config.CRY_F0_MIN} Hz) - likely adult or environmental"
+        if features['pitch_mean'] > Config.CRY_F0_MAX:
+            return False, f"Pitch too high (> {Config.CRY_F0_MAX} Hz) - likely not baby cry"
 
     # Rule 2: Check duration
     if features['duration'] < 0.5:
@@ -452,16 +473,23 @@ def validate_cry_with_acoustic_features(features: Dict[str, float],
     Returns:
         Tuple of (is_cry, adjusted_probability, rejection_reason)
     """
+    warnings.warn(
+        "validate_cry_with_acoustic_features is deprecated. "
+        "Use validate_cry_binary for true binary classification.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
+
     # Start with model prediction
     if cry_prob < threshold:
         return False, cry_prob, "Model confidence too low"
 
-    # Rule 1: Verify pitch is in typical baby cry range (250-700 Hz)
+    # Rule 1: Verify pitch is in typical baby cry range (Config.CRY_F0_MIN/MAX)
     if features['pitch_mean'] > 0:  # Only check if pitch was detected
-        if features['pitch_mean'] < 250:
-            return False, 0.0, "Pitch too low (< 250 Hz) - likely adult or environmental"
-        if features['pitch_mean'] > 800:
-            return False, 0.0, "Pitch too high (> 800 Hz) - likely noise or artifact"
+        if features['pitch_mean'] < Config.CRY_F0_MIN:
+            return False, 0.0, f"Pitch too low (< {Config.CRY_F0_MIN} Hz) - likely adult or environmental"
+        if features['pitch_mean'] > Config.CRY_F0_MAX:
+            return False, 0.0, f"Pitch too high (> {Config.CRY_F0_MAX} Hz) - likely noise or artifact"
 
     # Rule 2: Check duration pattern (cries are typically 0.5-5 seconds)
     if features['duration'] < 0.5:
@@ -502,13 +530,13 @@ def validate_cry_with_acoustic_features(features: Dict[str, float],
     if features['hnr_mean'] > 0.6:
         cry_prob *= 1.2  # Boost for strong harmonics
 
-    # Rule 8: Check temporal regularity
-    if features['regularity'] > 0.5:
+    # Rule 8: Check temporal regularity (check stricter bound first to avoid dead branch)
+    if features['regularity'] > 0.8:
+        # Too regular — likely music or periodic noise
+        cry_prob *= 0.8
+    elif features['regularity'] > 0.5:
         # Some regularity is good (cry bursts)
         cry_prob *= 1.1
-    elif features['regularity'] > 0.8:
-        # Too regular might be music
-        cry_prob *= 0.8
 
     # Clamp final probability
     cry_prob = max(0.0, min(1.0, cry_prob))

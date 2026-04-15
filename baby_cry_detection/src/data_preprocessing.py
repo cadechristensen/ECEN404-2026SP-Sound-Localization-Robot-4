@@ -4,17 +4,16 @@ Handles audio loading, feature extraction using log-mel spectrograms,
 and data augmentation techniques.
 """
 
-import os
+import random
 import librosa
 import numpy as np
 import torch
 import torchaudio
 import torchaudio.transforms as T
 from pathlib import Path
-from typing import Tuple, List, Optional, Union
+from typing import Dict, Tuple, List, Optional, Union
 import warnings
 import logging
-warnings.filterwarnings("ignore")
 
 try:
     from .config import Config
@@ -30,14 +29,16 @@ class AudioPreprocessor:
     Handles loading, resampling, and feature extraction from audio files.
     """
 
-    def __init__(self, config: Config = Config(), use_advanced_filtering: bool = True):
+    def __init__(self, config: Optional[Config] = None, use_advanced_filtering: bool = True):
         """
         Initialize the audio preprocessor.
 
         Args:
-            config: Configuration object containing processing parameters
+            config: Configuration object containing processing parameters. Defaults to Config().
             use_advanced_filtering: Whether to use advanced filtering techniques (VAD, noise reduction)
         """
+        if config is None:
+            config = Config()
         self.config = config
         self.sample_rate = config.SAMPLE_RATE
         self.duration = config.DURATION
@@ -60,6 +61,10 @@ class AudioPreprocessor:
 
         # Initialize amplitude to decibel transform
         self.amplitude_to_db = T.AmplitudeToDB()
+
+        # Cache T.Resample objects keyed by original sample rate to avoid
+        # re-constructing the resampler on every load_audio call (W2).
+        self._resamplers: Dict[int, T.Resample] = {}
 
         # Initialize advanced filtering pipeline
         self.filtering_pipeline = None
@@ -88,10 +93,12 @@ class AudioPreprocessor:
             if waveform.shape[0] > 1:
                 waveform = torch.mean(waveform, dim=0, keepdim=True)
 
-            # Resample if necessary
+            # Resample if necessary — reuse cached T.Resample to avoid
+            # re-building the filter bank on every call (W2).
             if original_sr != self.sample_rate:
-                resampler = T.Resample(original_sr, self.sample_rate)
-                waveform = resampler(waveform)
+                if original_sr not in self._resamplers:
+                    self._resamplers[original_sr] = T.Resample(original_sr, self.sample_rate)
+                waveform = self._resamplers[original_sr](waveform)
 
             return waveform.squeeze(0), original_sr
 
@@ -103,12 +110,14 @@ class AudioPreprocessor:
             except Exception as e2:
                 raise RuntimeError(f"Failed to load audio file {file_path}: {e2}")
 
-    def pad_or_truncate(self, waveform: torch.Tensor) -> torch.Tensor:
+    def pad_or_truncate(self, waveform: torch.Tensor, training: bool = True) -> torch.Tensor:
         """
         Pad or truncate audio to fixed duration.
 
         Args:
             waveform: Input audio waveform
+            training: If True, use random crop for data augmentation; if False
+                      use deterministic center crop so TTA passes are comparable (W3).
 
         Returns:
             Fixed-length audio waveform
@@ -116,8 +125,12 @@ class AudioPreprocessor:
         target_length = int(self.sample_rate * self.duration)
 
         if len(waveform) > target_length:
-            # Randomly crop from the audio
-            start_idx = np.random.randint(0, len(waveform) - target_length + 1)
+            if training:
+                # Random crop during training for augmentation diversity
+                start_idx = np.random.randint(0, len(waveform) - target_length + 1)
+            else:
+                # Deterministic center crop during inference / TTA
+                start_idx = (len(waveform) - target_length) // 2
             waveform = waveform[start_idx:start_idx + target_length]
         elif len(waveform) < target_length:
             # Pad with zeros
@@ -149,30 +162,54 @@ class AudioPreprocessor:
         # Calculate expected time steps for consistency
         expected_time_steps = int(self.duration * self.sample_rate // self.hop_length) + 1
 
+        # Clamp non-finite values that arise from silent/zero-energy audio before
+        # any indexing.  AmplitudeToDB of 0 → -inf; log_mel_spec.min() on such a
+        # tensor returns -inf and torch.nn.functional.pad propagates it everywhere,
+        # producing an all-NaN spectrogram (C4).
+        log_mel_spec = torch.nan_to_num(log_mel_spec, nan=0.0, posinf=80.0, neginf=-80.0)
+
         # Pad or truncate the spectrogram to ensure consistent size
         current_time_steps = log_mel_spec.shape[-1]
         if current_time_steps < expected_time_steps:
-            # Pad with minimum value
+            # Pad with a fixed silence constant rather than the per-sample minimum.
+            # Using log_mel_spec.min() would leak audio content into the padding region,
+            # giving the model a spurious per-sample feature to learn.  -80.0 dB is safe
+            # because nan_to_num above already clamps neginf to -80.0, so the padding
+            # value is indistinguishable from the quietest legitimate energy bin.
             padding = expected_time_steps - current_time_steps
+            pad_value = -80.0
             log_mel_spec = torch.nn.functional.pad(
-                log_mel_spec, (0, padding), mode='constant', value=log_mel_spec.min()
+                log_mel_spec, (0, padding), mode='constant', value=pad_value
             )
         elif current_time_steps > expected_time_steps:
             # Truncate
             log_mel_spec = log_mel_spec[:, :, :expected_time_steps]
 
-        # Normalize to [-1, 1] range
+        # Per-sample instance normalisation to zero-mean unit-variance.
+        # NOTE (W4): this makes each sample's statistics dependent only on itself,
+        # so TTA augmented views will have slightly different means/stds.  To make
+        # TTA logits fully comparable, compute normalization statistics on the
+        # un-augmented waveform before augmenting and pass them in — or switch to
+        # global dataset statistics stored in config.
         log_mel_spec = (log_mel_spec - log_mel_spec.mean()) / (log_mel_spec.std() + 1e-8)
 
         return log_mel_spec.squeeze(0)  # Remove batch dimension
 
-    def process_audio_file(self, file_path: Union[str, Path], apply_filtering: bool = None) -> torch.Tensor:
+    def process_audio_file(
+        self,
+        file_path: Union[str, Path],
+        apply_filtering: bool = None,
+        training: bool = False,
+    ) -> torch.Tensor:
         """
         Complete preprocessing pipeline for a single audio file.
 
         Args:
             file_path: Path to audio file
             apply_filtering: Whether to apply advanced filtering (overrides default)
+            training: If True, pad_or_truncate uses a random crop (augmentation
+                diversity during training).  If False (default), uses a
+                deterministic center crop so inference and TTA are reproducible.
 
         Returns:
             Processed log-mel spectrogram
@@ -181,7 +218,7 @@ class AudioPreprocessor:
         waveform, _ = self.load_audio(file_path)
 
         # Pad or truncate to fixed length
-        waveform = self.pad_or_truncate(waveform)
+        waveform = self.pad_or_truncate(waveform, training=training)
 
         # Apply advanced filtering if enabled
         if apply_filtering is None:
@@ -212,14 +249,16 @@ class AudioAugmentation:
     Implements various augmentation techniques to improve model robustness.
     """
 
-    def __init__(self, config: Config = Config(), noise_files: Optional[List[Path]] = None):
+    def __init__(self, config: Optional[Config] = None, noise_files: Optional[List[Path]] = None):
         """
         Initialize audio augmentation.
 
         Args:
-            config: Configuration object containing augmentation parameters
+            config: Configuration object containing augmentation parameters. Defaults to Config().
             noise_files: List of noise file paths for background mixing
         """
+        if config is None:
+            config = Config()
         self.config = config
         self.noise_factor = config.NOISE_FACTOR
         self.time_stretch_range = config.TIME_STRETCH_RATE
@@ -234,13 +273,24 @@ class AudioAugmentation:
         self.num_time_masks = getattr(config, 'SPEC_AUG_NUM_TIME_MASKS', 2)
         self.num_freq_masks = getattr(config, 'SPEC_AUG_NUM_FREQ_MASKS', 2)
 
-        # Load noise files for background mixing
+        # Load noise files for background mixing.
+        # Inline loading with torchaudio avoids creating a throwaway AudioPreprocessor
+        # and its associated MelSpectrogram/AmplitudeToDB transforms (S5).
         self.noise_waveforms = []
         if self.noise_files:
-            preprocessor = AudioPreprocessor(config)
+            _noise_resamplers: Dict[int, T.Resample] = {}
             for noise_file in self.noise_files:
                 try:
-                    waveform, _ = preprocessor.load_audio(noise_file)
+                    waveform, original_sr = torchaudio.load(str(noise_file))
+                    # Mono downmix
+                    if waveform.shape[0] > 1:
+                        waveform = torch.mean(waveform, dim=0, keepdim=True)
+                    # Resample if needed, reusing cached resamplers
+                    if original_sr != config.SAMPLE_RATE:
+                        if original_sr not in _noise_resamplers:
+                            _noise_resamplers[original_sr] = T.Resample(original_sr, config.SAMPLE_RATE)
+                        waveform = _noise_resamplers[original_sr](waveform)
+                    waveform = waveform.squeeze(0)
                     # Ensure noise is long enough for mixing
                     if len(waveform) > config.SAMPLE_RATE * config.DURATION:
                         self.noise_waveforms.append(waveform)
@@ -275,8 +325,9 @@ class AudioAugmentation:
             self.time_stretch_range[1]
         )
 
-        # Convert to numpy for librosa processing
-        waveform_np = waveform.numpy()
+        # Convert to numpy for librosa processing — detach() + cpu() required
+        # before .numpy() to handle gradient-tracked and/or CUDA tensors (C1).
+        waveform_np = waveform.detach().cpu().numpy()
         stretched = librosa.effects.time_stretch(waveform_np, rate=stretch_factor)
 
         return torch.tensor(stretched, dtype=torch.float32)
@@ -296,8 +347,9 @@ class AudioAugmentation:
             self.pitch_shift_range[1] + 1
         )
 
-        # Convert to numpy for librosa processing
-        waveform_np = waveform.numpy()
+        # Convert to numpy for librosa processing — detach() + cpu() required
+        # before .numpy() to handle gradient-tracked and/or CUDA tensors (C1).
+        waveform_np = waveform.detach().cpu().numpy()
         shifted = librosa.effects.pitch_shift(
             waveform_np,
             sr=self.sample_rate,
@@ -334,7 +386,10 @@ class AudioAugmentation:
 
         # Mix multiple noise sources together
         for _ in range(num_sources):
-            noise_waveform = np.random.choice(self.noise_waveforms)
+            # random.choice handles a list of Tensors correctly; np.random.choice
+            # tries to convert the list to an array and raises ValueError on
+            # Python 3.10+ / NumPy 1.24+ when elements are non-scalar Tensors (C2).
+            noise_waveform = random.choice(self.noise_waveforms)
 
             # Extract a random segment from noise that matches waveform length
             if len(noise_waveform) <= target_length:
@@ -381,9 +436,13 @@ class AudioAugmentation:
         delay_samples = int(0.05 * self.sample_rate)  # 50ms delay (small room)
         decay = 0.3  # Reverb decay factor
 
-        # Create delayed and attenuated copies
+        # Create delayed and attenuated copies.
+        # Guard against waveforms shorter than the delay — the slice
+        # reverb[:len(waveform) - delay_samples] would have a negative stop
+        # index when len(waveform) <= delay_samples (W5).
         reverb = torch.zeros_like(waveform)
-        reverb[:len(waveform) - delay_samples] = waveform[delay_samples:] * decay
+        if len(waveform) > delay_samples:
+            reverb[:len(waveform) - delay_samples] = waveform[delay_samples:] * decay
 
         # Add second reflection
         delay_samples_2 = int(0.08 * self.sample_rate)  # 80ms delay
@@ -417,19 +476,71 @@ class AudioAugmentation:
         mel_spec = mel_spectrogram.clone()
         n_mels, time_steps = mel_spec.shape
 
-        # Apply frequency masking
+        # Apply frequency masking.
+        # Clamp mask width to n_mels so that (n_mels - f) is always >= 1,
+        # preventing a ValueError when freq_mask_param >= n_mels (C3).
         for _ in range(self.num_freq_masks):
-            f = int(np.random.uniform(0, self.freq_mask_param))
-            f0 = int(np.random.uniform(0, n_mels - f))
+            f = min(int(np.random.uniform(0, self.freq_mask_param)), n_mels - 1)
+            f0 = int(np.random.uniform(0, max(1, n_mels - f)))
             mel_spec[f0:f0 + f, :] = 0
 
-        # Apply time masking
+        # Apply time masking.
+        # Same guard: clamp to time_steps - 1 to keep the upper bound positive (C3).
         for _ in range(self.num_time_masks):
-            t = int(np.random.uniform(0, self.time_mask_param))
-            t0 = int(np.random.uniform(0, time_steps - t))
+            t = min(int(np.random.uniform(0, self.time_mask_param)), time_steps - 1)
+            t0 = int(np.random.uniform(0, max(1, time_steps - t)))
             mel_spec[:, t0:t0 + t] = 0
 
         return mel_spec
+
+    def random_duration_simulation(self, spectrogram: torch.Tensor) -> torch.Tensor:
+        """
+        Simulate variable-length audio at the spectrogram level.
+
+        Randomly masks the rightmost portion of the spectrogram (simulating
+        zero-padding from short audio) and re-normalizes.  This breaks the
+        spurious correlation between zero-padding and the cry class: 77% of
+        cry training samples are <3s and get zero-padded vs only 5% of non-cry.
+
+        Applied to BOTH classes with equal probability so the model learns to
+        detect cry features, not the padding pattern.
+
+        Args:
+            spectrogram: Input spectrogram of shape (n_mels, time_steps),
+                         already z-score normalized from preprocessing.
+
+        Returns:
+            Augmented spectrogram with simulated duration variation.
+        """
+        use_aug = getattr(self.config, 'USE_DURATION_AUGMENT', True)
+        if not use_aug:
+            return spectrogram
+
+        prob = getattr(self.config, 'DURATION_SIM_PROBABILITY', 0.5)
+        if random.random() > prob:
+            return spectrogram
+
+        n_mels, time_steps = spectrogram.shape
+        min_keep = getattr(self.config, 'DURATION_SIM_MIN_KEEP', 0.30)
+        max_keep = getattr(self.config, 'DURATION_SIM_MAX_KEEP', 0.85)
+
+        keep_fraction = random.uniform(min_keep, max_keep)
+        keep_steps = max(1, int(time_steps * keep_fraction))
+
+        # Mask the right portion with a fixed constant rather than the per-sample
+        # signal minimum.  Using the signal minimum leaks audio content into the
+        # masked region.  The spectrogram is already z-score normalized at this
+        # point, so 0.0 (the distribution mean) is the natural silence surrogate
+        # and is consistent across all samples.
+        masked = spectrogram.clone()
+        masked[:, keep_steps:] = 0.0
+
+        # Re-normalize to zero-mean unit-variance (matching the training pipeline)
+        std = masked.std()
+        if std > 1e-8:
+            masked = (masked - masked.mean()) / std
+
+        return masked
 
     def random_augment(self, waveform: torch.Tensor) -> torch.Tensor:
         """
@@ -474,15 +585,15 @@ class AudioAugmentation:
         return augmented_waveform
 
 
-def collect_audio_files(data_dir: Path, supported_formats: List[str], multi_class: bool = False) -> List[Tuple[Path, str]]:
+def collect_audio_files(data_dir: Path, supported_formats: List[str]) -> List[Tuple[Path, str]]:
     """
     Collect all audio files from the data directory.
     Supports recursive searching for cry_baby and hard_negatives directories.
+    Binary classification only: cry vs non_cry.
 
     Args:
         data_dir: Path to data directory
         supported_formats: List of supported audio formats
-        multi_class: If True, use multi-class labels; if False, use binary labels
 
     Returns:
         List of tuples (file_path, label)
@@ -492,122 +603,20 @@ def collect_audio_files(data_dir: Path, supported_formats: List[str], multi_clas
     # Define label mapping based on directory structure
     # NOTE: 'noise' directory is excluded - noise files are used for augmentation, not as training labels
 
-    if multi_class:
-        # Multi-class mode: cry, adult_speech, baby_noncry, environmental
-        label_mapping = {
-            'cry': 'cry',                    # Baby cry sounds (Donate-a-Cry, Hugging Face, Kaggle)
-            'cry_ICSD': 'cry',               # ICSD baby cry real strong labeled samples
-            'cry_crycaleb': 'cry',           # CryCeleb2023 baby cry samples
-            'baby_noncry': 'baby_noncry',    # Non-cry baby sounds (babbling, laughing, cooing)
-            'adult_speech': 'adult_speech',  # Adult speech/conversation (LibriSpeech)
-            'environmental': 'environmental', # Environmental sounds (ESC-50)
-            # 'noise' intentionally excluded - these are for background augmentation only
-        }
+    # Binary mode: cry vs non_cry
+    label_mapping = {
+        'cry': 'cry',                    # Baby cry sounds (Donate-a-Cry, Hugging Face, Kaggle)
+        'cry_ICSD': 'cry',               # ICSD baby cry real strong labeled samples
+        'cry_crycaleb': 'cry',           # CryCeleb2023 baby cry samples
+        'baby_noncry': 'non_cry',        # Non-cry baby sounds (babbling, laughing, cooing, silence)
+        'adult_speech': 'non_cry',       # Adult speech/conversation (LibriSpeech)
+        'environmental': 'non_cry',      # Environmental sounds (ESC-50)
+        # 'noise' intentionally excluded - these are for background augmentation only
+    }
 
-        # Special handling for nested directories
-        # cry_baby subdirectories all map to 'cry'
-        # hard_negatives subdirectories map based on their subdirectory names
-        nested_dir_rules = {
-            'cry_baby': 'cry',  # All files in cry_baby/* are cry samples
-        }
-
-        # Map hard_negatives subdirectories to appropriate classes
-        hard_negatives_mapping = {
-            'adult_speech': 'adult_speech',
-            'adult_scream': 'adult_speech',    # Hard negative: sounds like cry but is adult
-            'adult_shout': 'adult_speech',     # Hard negative: sounds like cry but is adult
-            'baby_noncry': 'baby_noncry',
-            'child_tantrum': 'baby_noncry',    # Hard negative: child distress but not baby cry
-            'music_vocal': 'environmental',     # Hard negative: vocal music can resemble cries
-            'silence': 'environmental',         # Important negative: periods of silence
-            # All other environmental sounds
-            'airplane': 'environmental',
-            'breathing': 'environmental',
-            'brushing_teeth': 'environmental',
-            'can_opening': 'environmental',
-            'car_horn': 'environmental',
-            'cat': 'environmental',
-            'chainsaw': 'environmental',
-            'chirping_birds': 'environmental',
-            'church_bells': 'environmental',
-            'clapping': 'environmental',
-            'clock_alarm': 'environmental',
-            'clock_tick': 'environmental',
-            'coughing': 'environmental',
-            'cow': 'environmental',
-            'crackling_fire': 'environmental',
-            'crickets': 'environmental',
-            'crow': 'environmental',
-            'dog': 'environmental',
-            'door_wood_creaks': 'environmental',
-            'door_wood_knock': 'environmental',
-            'drinking_sipping': 'environmental',
-            'engine': 'environmental',
-            'fireworks': 'environmental',
-            'footsteps': 'environmental',
-            'frog': 'environmental',
-            'glass_breaking': 'environmental',
-            'hand_saw': 'environmental',
-            'helicopter': 'environmental',
-            'hen': 'environmental',
-            'insects': 'environmental',
-            'keyboard_typing': 'environmental',
-            'laughing': 'environmental',
-            'mouse_click': 'environmental',
-            'pig': 'environmental',
-            'pouring_water': 'environmental',
-            'rain': 'environmental',
-            'rooster': 'environmental',
-            'sea_waves': 'environmental',
-            'sheep': 'environmental',
-            'siren': 'environmental',
-            'sneezing': 'environmental',
-            'snoring': 'environmental',
-            'thunderstorm': 'environmental',
-            'toilet_flush': 'environmental',
-            'train': 'environmental',
-            'vacuum_cleaner': 'environmental',
-            'washing_machine': 'environmental',
-            'water_drops': 'environmental',
-            'wind': 'environmental',
-        }
-    else:
-        # Binary mode: cry vs non_cry
-        label_mapping = {
-            'cry': 'cry',                    # Baby cry sounds (Donate-a-Cry, Hugging Face, Kaggle)
-            'cry_ICSD': 'cry',               # ICSD baby cry real strong labeled samples
-            'cry_crycaleb': 'cry',           # CryCeleb2023 baby cry samples
-            'baby_noncry': 'non_cry',        # Non-cry baby sounds (babbling, laughing, cooing, silence)
-            'adult_speech': 'non_cry',       # Adult speech/conversation (LibriSpeech)
-            'environmental': 'non_cry',      # Environmental sounds (ESC-50)
-            # 'noise' intentionally excluded - these are for background augmentation only
-        }
-
-        nested_dir_rules = {
-            'cry_baby': 'cry',  # All files in cry_baby/* are cry samples
-        }
-
-        # In binary mode, all hard_negatives map to non_cry
-        hard_negatives_mapping = {
-            # All subdirectories map to non_cry in binary mode
-        }
-
-    # Helper function to recursively collect files from nested directories
-    def collect_from_nested_dir(parent_dir: Path, subdirs_mapping: dict):
-        """Recursively collect files from nested directories with specific label mappings."""
-        collected = []
-        for subdir in parent_dir.iterdir():
-            if not subdir.is_dir():
-                continue
-
-            subdir_name = subdir.name
-            if subdir_name in subdirs_mapping:
-                label = subdirs_mapping[subdir_name]
-                # Recursively find all audio files in this subdirectory
-                for file_path in subdir.rglob('*'):
-                    if file_path.is_file() and file_path.suffix.lower() in supported_formats:
-                        collected.append((file_path, label))
-        return collected
+    nested_dir_rules = {
+        'cry_baby': 'cry',  # All files in cry_baby/* are cry samples
+    }
 
     # ONLY collect from cry_baby and hard_negatives folders
     # All other folders (cry, adult_speech, baby_noncry, environmental, noise) are IGNORED
@@ -626,18 +635,42 @@ def collect_audio_files(data_dir: Path, supported_formats: List[str], multi_clas
                     audio_files.append((file_path, label))
 
         elif dir_name == 'hard_negatives':
-            # Map based on subdirectory names
-            if multi_class:
-                audio_files.extend(collect_from_nested_dir(subdir, hard_negatives_mapping))
-            else:
-                # In binary mode, all hard_negatives are non_cry
-                for file_path in subdir.rglob('*'):
-                    if file_path.is_file() and file_path.suffix.lower() in supported_formats:
-                        audio_files.append((file_path, 'non_cry'))
+            # All hard_negatives are non_cry in binary classification
+            for file_path in subdir.rglob('*'):
+                if file_path.is_file() and file_path.suffix.lower() in supported_formats:
+                    audio_files.append((file_path, 'non_cry'))
 
         # All other directories (cry, adult_speech, baby_noncry, environmental, noise) are IGNORED
 
-    return audio_files
+    # Deduplicate by filename stem: if the same base filename appears under multiple
+    # subdirectories (e.g. 547190_Voice_AdultMale_DeathScream_09.mp3 in both adult_shout
+    # and adult_scream), keep only the first occurrence.  Duplicate files with conflicting
+    # labels create irreconcilable label noise that degrades model calibration.
+    seen_stems: dict = {}
+    deduplicated: List[Tuple[Path, str]] = []
+    for file_path, label in audio_files:
+        stem = file_path.name  # Use full filename (stem + ext) as key
+        if stem in seen_stems:
+            existing_path, existing_label = seen_stems[stem]
+            if existing_label != label:
+                logging.warning(
+                    f"Duplicate filename with conflicting labels — keeping first occurrence:\n"
+                    f"  KEPT:    {existing_path} (label='{existing_label}')\n"
+                    f"  DROPPED: {file_path} (label='{label}')"
+                )
+            else:
+                logging.debug(f"Duplicate filename (same label) dropped: {file_path}")
+        else:
+            seen_stems[stem] = (file_path, label)
+            deduplicated.append((file_path, label))
+
+    if len(deduplicated) < len(audio_files):
+        logging.info(
+            f"Deduplication: removed {len(audio_files) - len(deduplicated)} duplicate "
+            f"files from {len(audio_files)} total. Using {len(deduplicated)} files."
+        )
+
+    return deduplicated
 
 
 def collect_noise_files(data_dir: Path, supported_formats: List[str]) -> List[Path]:
@@ -662,16 +695,17 @@ def collect_noise_files(data_dir: Path, supported_formats: List[str]) -> List[Pa
     return noise_files
 
 
-def get_class_weights(audio_files: List[Tuple[Path, str]], cry_weight_multiplier: float = 2.0,
-                     class_labels: List[str] = None, baby_noncry_weight_cap: float = None) -> torch.Tensor:
+def get_class_weights(audio_files: List[Tuple[Path, str]],
+                     cry_weight_multiplier: float = Config.CRY_WEIGHT_MULTIPLIER,
+                     class_labels: List[str] = None) -> torch.Tensor:
     """
     Calculate class weights for balanced training with emphasis on cry detection.
 
     Args:
         audio_files: List of (file_path, label) tuples
-        cry_weight_multiplier: Multiplier for cry class weight (default 2.0 to penalize missed cries more)
+        cry_weight_multiplier: Multiplier for cry class weight (default Config.CRY_WEIGHT_MULTIPLIER).
+            Previously hardcoded to 2.0 which contradicted config.py (S4).
         class_labels: List of class labels in order. If None, defaults to ['non_cry', 'cry']
-        baby_noncry_weight_cap: Maximum weight cap for baby_noncry class to reduce false positives
 
     Returns:
         Class weights tensor
@@ -696,9 +730,6 @@ def get_class_weights(audio_files: List[Tuple[Path, str]], cry_weight_multiplier
             # Apply multiplier to cry class to penalize missed cries more heavily
             if class_label == 'cry':
                 weight *= cry_weight_multiplier
-            # Apply weight cap to baby_noncry to reduce false positives
-            elif class_label == 'baby_noncry' and baby_noncry_weight_cap is not None:
-                weight = min(weight, baby_noncry_weight_cap)
         else:
             weight = 1.0
         weights.append(weight)

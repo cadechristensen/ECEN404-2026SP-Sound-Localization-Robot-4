@@ -21,41 +21,43 @@ if sys.platform == 'win32':
 
 import numpy as np
 from pathlib import Path
-from typing import Dict, Optional
+from typing import Dict, Optional, Tuple
 import logging
 import json
+from sklearn.metrics import accuracy_score
 
 try:
     from .config import Config
     from .dataset import DatasetManager
-    from .evaluation import ModelEvaluator
+    from .evaluation import ModelEvaluator, EnsembleModel
 except ImportError:
-    import sys
-    from pathlib import Path as PathLib
-    src_dir = PathLib(__file__).parent
+    src_dir = Path(__file__).parent
     if str(src_dir) not in sys.path:
         sys.path.insert(0, str(src_dir))
     from config import Config
     from dataset import DatasetManager
-    from evaluation import ModelEvaluator
+    from evaluation import ModelEvaluator, EnsembleModel
+
+
+logger = logging.getLogger(__name__)
 
 
 def evaluate_saved_model(
     model_path: Path,
-    config: Config = Config(),
+    config: Optional[Config] = None,
     compute_bootstrap_ci: bool = True,
     n_bootstrap: int = 1000,
     bootstrap_confidence_level: float = 0.95,
-    apply_temperature_scaling: bool = False,
+    apply_temperature_scaling: bool = True,
     save_calibrated_model: bool = True
-):
+) -> Tuple[Dict, Dict, Dict]:
     """
     Evaluate a saved model with optional bootstrap confidence intervals and
     temperature scaling calibration.
 
     Args:
         model_path: Path to saved model
-        config: Configuration object
+        config: Configuration object. Defaults to Config().
         compute_bootstrap_ci: Whether to compute bootstrap CIs (default: True)
         n_bootstrap: Number of bootstrap resamples (default: 1000)
         bootstrap_confidence_level: Confidence level for CIs (default: 0.95)
@@ -71,28 +73,56 @@ def evaluate_saved_model(
         If apply_temperature_scaling is True, metrics also include
         'temperature_calibration' with calibration results.
     """
+    if config is None:
+        config = Config()
+
     results_dir = config.get_results_dir()
 
     log_file = results_dir / "logs" / "evaluation.log"
     log_file.parent.mkdir(parents=True, exist_ok=True)
 
-    logging.basicConfig(
-        level=getattr(logging, config.LOG_LEVEL),
-        format=config.LOG_FORMAT,
-        handlers=[
-            logging.FileHandler(log_file),
-            logging.StreamHandler()
-        ]
-    )
+    # Use a module-level logger so repeated calls each get their own FileHandler
+    # without the root-logger no-op problem of logging.basicConfig (which is a
+    # no-op after the first call and would silently write all subsequent eval
+    # output to the first log file).
+    for h in logger.handlers[:]:
+        logger.removeHandler(h)
+        h.close()
+    # Logger at DEBUG so all messages reach handlers; each handler filters independently.
+    logger.setLevel(logging.DEBUG)
+    fmt = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
+    file_h = logging.FileHandler(log_file)
+    file_h.setLevel(logging.DEBUG)       # File captures everything
+    file_h.setFormatter(fmt)
+    stream_h = logging.StreamHandler()
+    stream_h.setLevel(getattr(logging, config.LOG_LEVEL))  # Terminal shows INFO+ only
+    stream_h.setFormatter(fmt)
+    logger.addHandler(file_h)
+    logger.addHandler(stream_h)
 
     if compute_bootstrap_ci:
-        logging.info(f"Bootstrap CI enabled: {n_bootstrap} resamples, {bootstrap_confidence_level*100:.0f}% CI")
+        logger.info(f"Bootstrap CI enabled: {n_bootstrap} resamples, {bootstrap_confidence_level*100:.0f}% CI")
 
     if apply_temperature_scaling:
-        logging.info("Temperature scaling calibration enabled")
+        logger.info("Temperature scaling calibration enabled")
 
     evaluator = ModelEvaluator(config)
-    evaluator.load_model(model_path)
+
+    # Load ensemble if enabled and checkpoint metadata exists
+    if config.USE_ENSEMBLE:
+        results_dir_for_ensemble = model_path.parent
+        ensemble_metadata_path = results_dir_for_ensemble / "ensemble_checkpoints.json"
+        if ensemble_metadata_path.exists():
+            logger.info("USE_ENSEMBLE=True — loading ensemble model from checkpoints")
+            ensemble_model = EnsembleModel.from_results_dir(
+                results_dir_for_ensemble, config, evaluator.device
+            )
+            evaluator.model = ensemble_model
+        else:
+            logger.warning("USE_ENSEMBLE=True but no ensemble_checkpoints.json found — falling back to single model")
+            evaluator.load_model(model_path)
+    else:
+        evaluator.load_model(model_path)
 
     dataset_manager = DatasetManager(config)
     train_dataset, val_dataset, test_dataset = dataset_manager.prepare_datasets()
@@ -106,11 +136,11 @@ def evaluate_saved_model(
             val_loader, results_dir, save_calibrated_model=save_calibrated_model
         )
 
+    # Bootstrap is intentionally disabled for the training split — it adds
+    # significant latency and training-set metrics are not used for model selection.
     train_metrics = evaluator.evaluate_model(
         train_loader, results_dir, "train",
         compute_bootstrap_ci=False,
-        n_bootstrap=n_bootstrap,
-        bootstrap_confidence_level=bootstrap_confidence_level
     )
     val_metrics = evaluator.evaluate_model(
         val_loader, results_dir, "val",
@@ -134,30 +164,31 @@ def evaluate_saved_model(
             history = json.load(f)
         evaluator.plot_training_history(history, results_dir)
 
-    logging.info(f"Evaluation completed. Results saved to {results_dir}")
+    logger.info(f"Evaluation completed. Results saved to {results_dir}")
 
     if compute_bootstrap_ci and 'bootstrap_confidence_intervals' in test_metrics:
         ci = test_metrics['bootstrap_confidence_intervals']
-        logging.info("\n" + "="*60)
-        logging.info("FINAL TEST SET RESULTS WITH 95% CONFIDENCE INTERVALS")
-        logging.info("="*60)
-        logging.info(f"Accuracy:  {test_metrics['accuracy']:.4f} [{ci.get('accuracy_ci_lower', 0):.4f}, {ci.get('accuracy_ci_upper', 0):.4f}]")
-        logging.info(f"Precision: {test_metrics['precision']:.4f} [{ci.get('precision_ci_lower', 0):.4f}, {ci.get('precision_ci_upper', 0):.4f}]")
-        logging.info(f"Recall:    {test_metrics['recall']:.4f} [{ci.get('recall_ci_lower', 0):.4f}, {ci.get('recall_ci_upper', 0):.4f}]")
-        logging.info(f"F1-Score:  {test_metrics['f1_score']:.4f} [{ci.get('f1_score_ci_lower', 0):.4f}, {ci.get('f1_score_ci_upper', 0):.4f}]")
+        _nan = float('nan')  # sentinel: missing CI bound is a bug, not zero
+        logger.info("\n" + "="*60)
+        logger.info(f"FINAL TEST SET RESULTS WITH {bootstrap_confidence_level*100:.0f}% CONFIDENCE INTERVALS")
+        logger.info("="*60)
+        logger.info(f"Accuracy:  {test_metrics['accuracy']:.4f} [{ci['accuracy_ci_lower']:.4f}, {ci['accuracy_ci_upper']:.4f}]")
+        logger.info(f"Precision: {test_metrics['precision']:.4f} [{ci['precision_ci_lower']:.4f}, {ci['precision_ci_upper']:.4f}]")
+        logger.info(f"Recall:    {test_metrics['recall']:.4f} [{ci['recall_ci_lower']:.4f}, {ci['recall_ci_upper']:.4f}]")
+        logger.info(f"F1-Score:  {test_metrics['f1_score']:.4f} [{ci['f1_score_ci_lower']:.4f}, {ci['f1_score_ci_upper']:.4f}]")
         if 'roc_auc' in test_metrics:
-            logging.info(f"ROC-AUC:   {test_metrics['roc_auc']:.4f} [{ci.get('roc_auc_ci_lower', 0):.4f}, {ci.get('roc_auc_ci_upper', 0):.4f}]")
-        logging.info("="*60)
+            logger.info(f"ROC-AUC:   {test_metrics['roc_auc']:.4f} [{ci.get('roc_auc_ci_lower', _nan):.4f}, {ci.get('roc_auc_ci_upper', _nan):.4f}]")
+        logger.info("="*60)
 
     if calibration_results is not None and 'optimal_temperature' in calibration_results:
-        logging.info("\n" + "="*60)
-        logging.info("TEMPERATURE SCALING CALIBRATION SUMMARY")
-        logging.info("="*60)
-        logging.info(f"Optimal Temperature: {calibration_results['optimal_temperature']:.4f}")
-        logging.info(f"ECE: {calibration_results['initial_ece']*100:.2f}% -> {calibration_results['final_ece']*100:.2f}%")
-        logging.info(f"MCE: {calibration_results['initial_mce']*100:.2f}% -> {calibration_results['final_mce']*100:.2f}%")
-        logging.info(f"ECE Improvement: {calibration_results['ece_improvement_percent']:.1f}%")
-        logging.info("="*60)
+        logger.info("\n" + "="*60)
+        logger.info("TEMPERATURE SCALING CALIBRATION SUMMARY")
+        logger.info("="*60)
+        logger.info(f"Optimal Temperature: {calibration_results['optimal_temperature']:.4f}")
+        logger.info(f"ECE: {calibration_results['initial_ece']*100:.2f}% -> {calibration_results['final_ece']*100:.2f}%")
+        logger.info(f"MCE: {calibration_results['initial_mce']*100:.2f}% -> {calibration_results['final_mce']*100:.2f}%")
+        logger.info(f"ECE Improvement: {calibration_results['ece_improvement_percent']:.1f}%")
+        logger.info("="*60)
 
     return train_metrics, val_metrics, test_metrics
 
@@ -172,7 +203,7 @@ def compare_two_models(
     model_name_b: str = "Model B",
     results_dir: Optional[Path] = None,
     alpha: float = 0.05,
-    config: Config = None
+    config: Optional[Config] = None
 ) -> Dict:
     """
     Standalone function to compare two models with full statistical analysis.
@@ -250,17 +281,17 @@ def compare_two_models(
         results_file = results_dir / "model_comparison_results.json"
         with open(results_file, 'w', encoding='utf-8') as f:
             json.dump(results, f, indent=2)
-        logging.info(f"Comparison results saved to {results_file}")
+        logger.info(f"Comparison results saved to {results_file}")
 
-    logging.info("\n" + "=" * 60)
-    logging.info("MODEL COMPARISON SUMMARY")
-    logging.info("=" * 60)
-    logging.info(f"Model A ({model_name_a}): Accuracy = {results['model_a_metrics']['accuracy']:.4f}")
-    logging.info(f"Model B ({model_name_b}): Accuracy = {results['model_b_metrics']['accuracy']:.4f}")
-    logging.info(f"\nMcNemar's test p-value: {results['mcnemars_test']['p_value']:.4f}")
-    logging.info(f"Significant at alpha={alpha}: {results['mcnemars_test']['significant']}")
-    logging.info(f"\nConclusion: {results['overall_conclusion']}")
-    logging.info("=" * 60)
+    logger.info("\n" + "=" * 60)
+    logger.info("MODEL COMPARISON SUMMARY")
+    logger.info("=" * 60)
+    logger.info(f"Model A ({model_name_a}): Accuracy = {results['model_a_metrics']['accuracy']:.4f}")
+    logger.info(f"Model B ({model_name_b}): Accuracy = {results['model_b_metrics']['accuracy']:.4f}")
+    logger.info(f"\nMcNemar's test p-value: {results['mcnemars_test']['p_value']:.4f}")
+    logger.info(f"Significant at alpha={alpha}: {results['mcnemars_test']['significant']}")
+    logger.info(f"\nConclusion: {results['overall_conclusion']}")
+    logger.info("=" * 60)
 
     return results
 
@@ -270,7 +301,7 @@ def run_significance_tests_summary(
     y_pred: np.ndarray,
     model_name: str = "Model",
     alpha: float = 0.05,
-    config: Config = None
+    config: Optional[Config] = None
 ) -> Dict:
     """
     Run all significance tests for a single model against baselines.
@@ -291,8 +322,6 @@ def run_significance_tests_summary(
     Returns:
         Dictionary with comparison results against all baselines
     """
-    from sklearn.metrics import accuracy_score
-
     if config is None:
         config = Config()
 
@@ -308,18 +337,18 @@ def run_significance_tests_summary(
         "vs_baseline": evaluator.compare_to_baseline_benchmark(y_true, y_pred, alpha=alpha)
     }
 
-    logging.info("\n" + "=" * 60)
-    logging.info(f"SIGNIFICANCE TESTS FOR: {model_name}")
-    logging.info("=" * 60)
-    logging.info(f"Model Accuracy: {accuracy:.4f} ({accuracy*100:.2f}%)")
-    logging.info(f"Sample Size: {len(y_true)}")
-    logging.info("-" * 60)
-    logging.info("VS RANDOM BASELINE (50%):")
-    logging.info(f"  {results['vs_random']['conclusion']}")
-    logging.info("-" * 60)
-    logging.info("VS BASELINE BENCHMARK (95%):")
-    logging.info(f"  {results['vs_baseline']['comparison_summary']}")
-    logging.info("=" * 60)
+    logger.info("\n" + "=" * 60)
+    logger.info(f"SIGNIFICANCE TESTS FOR: {model_name}")
+    logger.info("=" * 60)
+    logger.info(f"Model Accuracy: {accuracy:.4f} ({accuracy*100:.2f}%)")
+    logger.info(f"Sample Size: {len(y_true)}")
+    logger.info("-" * 60)
+    logger.info("VS RANDOM BASELINE (50%):")
+    logger.info(f"  {results['vs_random']['conclusion']}")
+    logger.info("-" * 60)
+    logger.info("VS BASELINE BENCHMARK (95%):")
+    logger.info(f"  {results['vs_baseline']['comparison_summary']}")
+    logger.info("=" * 60)
 
     return results
 

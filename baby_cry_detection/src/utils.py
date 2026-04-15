@@ -19,14 +19,16 @@ import json
 import pandas as pd
 from typing import Dict, List, Tuple, Optional, Union
 import warnings
-warnings.filterwarnings("ignore")
+# Suppress known noisy deprecation notices from visualization libraries only.
+warnings.filterwarnings("ignore", category=UserWarning, module="matplotlib")
+warnings.filterwarnings("ignore", category=UserWarning, module="librosa")
+warnings.filterwarnings("ignore", category=FutureWarning, module="librosa")
 
 try:
     from .config import Config
 except ImportError:
     import sys
-    from pathlib import Path as PathLib
-    src_dir = PathLib(__file__).parent
+    src_dir = Path(__file__).parent
     if str(src_dir) not in sys.path:
         sys.path.insert(0, str(src_dir))
     from config import Config  # type: ignore
@@ -37,14 +39,14 @@ class AudioVisualizer:
     Utility class for visualizing audio data and model features.
     """
 
-    def __init__(self, config: Config = Config()):
+    def __init__(self, config: Optional[Config] = None):
         """
         Initialize the audio visualizer.
 
         Args:
-            config: Configuration object
+            config: Configuration object. Defaults to Config().
         """
-        self.config = config
+        self.config = config if config is not None else Config()
         plt.style.use('default')  # Set consistent plot style
 
     def plot_waveform(
@@ -64,7 +66,7 @@ class AudioVisualizer:
             save_path: Path to save the plot (optional)
         """
         if isinstance(waveform, torch.Tensor):
-            waveform = waveform.numpy()
+            waveform = waveform.detach().cpu().numpy()
 
         plt.figure(figsize=(12, 4))
         time_axis = np.linspace(0, len(waveform) / sample_rate, len(waveform))
@@ -99,7 +101,7 @@ class AudioVisualizer:
             save_path: Path to save the plot (optional)
         """
         if isinstance(spectrogram, torch.Tensor):
-            spectrogram = spectrogram.numpy()
+            spectrogram = spectrogram.detach().cpu().numpy()
 
         # Remove channel dimension if present
         if spectrogram.ndim == 3:
@@ -147,7 +149,7 @@ class AudioVisualizer:
 
         for i, (spectrogram, title) in enumerate(features_list):
             if isinstance(spectrogram, torch.Tensor):
-                spectrogram = spectrogram.numpy()
+                spectrogram = spectrogram.detach().cpu().numpy()
 
             # Remove channel dimension if present
             if spectrogram.ndim == 3:
@@ -176,35 +178,45 @@ class AudioVisualizer:
         """
         Create visualizations for sample audio files from each class.
 
+        Reads raw (unaugmented) spectrograms directly from the underlying dataset
+        so that the plots show clean data for visual label verification, regardless
+        of whether augmentation is enabled on the DataLoader.
+
         Args:
             data_loader: DataLoader containing the dataset
             results_dir: Directory to save visualizations
             n_samples: Number of samples to visualize per class
         """
-        try:
-            from .data_preprocessing import AudioPreprocessor
-        except ImportError:
-            from data_preprocessing import AudioPreprocessor  # type: ignore
-
-        preprocessor = AudioPreprocessor(self.config)
         samples_per_class = {label: [] for label in self.config.CLASS_LABELS.values()}
 
-        # Collect samples from each class
-        for batch_data in data_loader:
-            # Handle both old format (specs, labels) and new format (specs, labels, indices)
-            if len(batch_data) == 3:
-                spectrograms, labels, _ = batch_data
-            else:
-                spectrograms, labels = batch_data
+        # Access the underlying dataset directly to read raw (unaugmented) spectrograms.
+        # DataLoader batches may have SpecAugment or other augmentation applied,
+        # which corrupts the visual representation with rectangular masks.
+        dataset = data_loader.dataset
 
-            for i, label in enumerate(labels):
+        with torch.no_grad():
+            for idx in range(len(dataset)):
+                # Temporarily disable augmentation for clean visualization
+                orig_augment = getattr(dataset, 'augment', False)
+                dataset.augment = False
+                try:
+                    item = dataset[idx]
+                finally:
+                    dataset.augment = orig_augment
+
+                # Handle 4-tuple (Phase 3), 3-tuple, and 2-tuple formats
+                if len(item) >= 3:
+                    spectrogram, label = item[0], item[1]
+                else:
+                    spectrogram, label = item
+
                 class_name = self.config.CLASS_LABELS[label.item()]
                 if len(samples_per_class[class_name]) < n_samples:
-                    samples_per_class[class_name].append(spectrograms[i])
+                    samples_per_class[class_name].append(spectrogram.detach())
 
-            # Check if we have enough samples for all classes
-            if all(len(samples) >= n_samples for samples in samples_per_class.values()):
-                break
+                # Check if we have enough samples for all classes
+                if all(len(samples) >= n_samples for samples in samples_per_class.values()):
+                    break
 
         # Create visualizations for each class
         plots_dir = results_dir / "plots"
@@ -221,7 +233,7 @@ class AudioVisualizer:
 
             for i, spectrogram in enumerate(samples):
                 # Plot spectrogram
-                spec_data = spectrogram[0].numpy()  # Remove channel dimension
+                spec_data = spectrogram[0].detach().cpu().numpy()  # Remove channel dimension
 
                 im1 = librosa.display.specshow(
                     spec_data,
@@ -258,14 +270,14 @@ class DataAnalyzer:
     Utility class for analyzing dataset statistics and characteristics.
     """
 
-    def __init__(self, config: Config = Config()):
+    def __init__(self, config: Optional[Config] = None):
         """
         Initialize the data analyzer.
 
         Args:
-            config: Configuration object
+            config: Configuration object. Defaults to Config().
         """
-        self.config = config
+        self.config = config if config is not None else Config()
 
     def analyze_audio_files(self, audio_files: List[Tuple[Path, str]]) -> Dict:
         """
@@ -287,7 +299,7 @@ class DataAnalyzer:
             'total_files': len(audio_files),
             'class_distribution': {},
             'duration_stats': [],
-            'sample_rate_stats': [],
+            'sample_rate_stats': set(),  # Only unique values are needed; set avoids O(n) list
             'file_size_stats': []
         }
 
@@ -304,7 +316,7 @@ class DataAnalyzer:
                 duration = len(waveform) / preprocessor.sample_rate
 
                 stats['duration_stats'].append(duration)
-                stats['sample_rate_stats'].append(original_sr)
+                stats['sample_rate_stats'].add(original_sr)
                 stats['file_size_stats'].append(file_path.stat().st_size)
 
             except Exception as e:
@@ -312,12 +324,16 @@ class DataAnalyzer:
 
         # Calculate summary statistics
         if stats['duration_stats']:
+            min_dur = getattr(self.config, 'MIN_AUDIO_DURATION', 0.8)
+            below_min = [d for d in stats['duration_stats'] if d < min_dur]
             stats['duration_summary'] = {
                 'mean': float(np.mean(stats['duration_stats'])),
                 'std': float(np.std(stats['duration_stats'])),
                 'min': float(np.min(stats['duration_stats'])),
                 'max': float(np.max(stats['duration_stats'])),
-                'median': float(np.median(stats['duration_stats']))
+                'median': float(np.median(stats['duration_stats'])),
+                'below_min_duration_threshold': len(below_min),
+                'min_duration_threshold': min_dur,
             }
 
         if stats['file_size_stats']:
@@ -326,8 +342,8 @@ class DataAnalyzer:
                 'total_mb': float(np.sum(stats['file_size_stats']) / 1024 / 1024)
             }
 
-        # Unique sample rates
-        stats['unique_sample_rates'] = list(set(stats['sample_rate_stats']))
+        # Unique sample rates (sample_rate_stats is already a set)
+        stats['unique_sample_rates'] = sorted(stats['sample_rate_stats'])
 
         return stats
 
@@ -448,23 +464,61 @@ def setup_logging(results_dir: Path, log_level: str = "INFO"):
     logs_dir = results_dir / "logs"
     logs_dir.mkdir(parents=True, exist_ok=True)
 
-    # Configure logging
-    logging.basicConfig(
-        level=getattr(logging, log_level),
-        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-        handlers=[
-            logging.FileHandler(logs_dir / "main.log"),
-            logging.StreamHandler()
-        ]
-    )
+    # Tear down any existing handlers first so this call always attaches
+    # fresh handlers (logging.basicConfig is a no-op if root already has handlers).
+    root_logger = logging.getLogger()
+    for h in root_logger.handlers[:]:
+        root_logger.removeHandler(h)
+        h.close()
 
-    # Set up separate loggers for different components
-    loggers = ['train', 'evaluate', 'data', 'model']
-    for logger_name in loggers:
-        logger = logging.getLogger(logger_name)
+    # Root logger at DEBUG so all messages reach the handlers.
+    # Each handler then filters independently:
+    #   FileHandler  → DEBUG+  (full verbose detail, including per-sample misclassifications)
+    #   StreamHandler → log_level (INFO by default — keeps the terminal clean)
+    root_logger.setLevel(logging.DEBUG)
+
+    fmt = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+
+    file_handler = logging.FileHandler(logs_dir / "main.log")
+    file_handler.setLevel(logging.DEBUG)
+    file_handler.setFormatter(fmt)
+
+    stream_handler = logging.StreamHandler()
+    stream_handler.setLevel(getattr(logging, log_level))
+    stream_handler.setFormatter(fmt)
+
+    root_logger.addHandler(file_handler)
+    root_logger.addHandler(stream_handler)
+
+    # Set up separate loggers for different components.
+    # Clear existing handlers first to prevent duplicate log lines if
+    # setup_logging is called more than once in the same process.
+    for logger_name in ['train', 'evaluate', 'data', 'model']:
+        comp_logger = logging.getLogger(logger_name)
+        for h in comp_logger.handlers[:]:
+            comp_logger.removeHandler(h)
+            h.close()
         handler = logging.FileHandler(logs_dir / f"{logger_name}.log")
+        handler.setLevel(logging.DEBUG)
         handler.setFormatter(logging.Formatter("%(asctime)s - %(levelname)s - %(message)s"))
-        logger.addHandler(handler)
+        comp_logger.addHandler(handler)
+
+
+def _to_serializable(value):
+    """
+    Convert a config value to a JSON-serializable type.
+
+    Handles Path, numpy arrays, torch tensors, and other non-serializable
+    types that can appear in Config attributes.  Falls back to str() for
+    anything that cannot be handled natively so json.dump never raises.
+    """
+    if isinstance(value, Path):
+        return str(value)
+    if isinstance(value, np.ndarray):
+        return value.tolist()
+    if isinstance(value, torch.Tensor):
+        return value.tolist()
+    return value
 
 
 def save_experiment_config(config: Config, results_dir: Path):
@@ -477,11 +531,16 @@ def save_experiment_config(config: Config, results_dir: Path):
     """
     config_dict = {}
     for attr in dir(config):
-        if not attr.startswith('_') and not callable(getattr(config, attr)):
-            value = getattr(config, attr)
-            if isinstance(value, Path):
-                value = str(value)
-            config_dict[attr] = value
+        if attr.startswith('_'):
+            continue
+        # Guard against @property accessors that raise (e.g. unresolved paths).
+        try:
+            raw = getattr(config, attr)
+        except Exception:
+            continue
+        if callable(raw):
+            continue
+        config_dict[attr] = _to_serializable(raw)
 
     config_path = results_dir / "experiment_config.json"
     with open(config_path, 'w') as f:

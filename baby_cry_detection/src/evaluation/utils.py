@@ -56,10 +56,11 @@ def predict_with_tta(
     return avg_outputs
 
 
-class EnsembleModel:
+class EnsembleModel(nn.Module):
     """
     Ensemble multiple model checkpoints for better predictions.
     Averages predictions from the last N best checkpoints to improve robustness.
+    Extends nn.Module for compatibility with TemperatureScaledModel wrapping.
     """
 
     def __init__(self, model_paths: List[Path], config, device: torch.device):
@@ -71,12 +72,13 @@ class EnsembleModel:
             config: Config object
             device: torch device
         """
+        super().__init__()
         from ..model import create_model
 
-        self.models = []
         self.device = device
         self.config = config
 
+        models = []
         logging.info(f"Loading {len(model_paths)} models for ensemble...")
         for i, path in enumerate(model_paths):
             if not path.exists():
@@ -93,27 +95,21 @@ class EnsembleModel:
                 model.load_state_dict(checkpoint)
 
             model.eval()
-            self.models.append(model)
+            models.append(model)
             logging.info(f"  Loaded model {i+1}/{len(model_paths)}: {path.name}")
 
-        if not self.models:
+        if not models:
             raise ValueError("No valid models loaded for ensemble!")
 
+        self.models = nn.ModuleList(models)
         logging.info(f"Ensemble ready with {len(self.models)} models")
 
-    def eval(self):
-        """Set all models to evaluation mode."""
-        for model in self.models:
-            model.eval()
-        return self
-
-    def __call__(self, x: torch.Tensor) -> torch.Tensor:
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         """
-        Forward pass through all models and average predictions.
+        Forward pass through all models and average logits.
         """
-        with torch.no_grad():
-            predictions = [model(x) for model in self.models]
-            return torch.mean(torch.stack(predictions), dim=0)
+        predictions = [model(x) for model in self.models]
+        return torch.mean(torch.stack(predictions), dim=0)
 
     @staticmethod
     def from_results_dir(results_dir: Path, config, device: torch.device) -> 'EnsembleModel':
@@ -174,8 +170,8 @@ def generate_predictions(
     with torch.no_grad():
         desc = "Generating predictions (TTA)" if use_tta else "Generating predictions"
         for batch_data in tqdm(data_loader, desc=desc):
-            if len(batch_data) == 3:
-                spectrograms, labels, _ = batch_data
+            if len(batch_data) >= 3:
+                spectrograms, labels = batch_data[0], batch_data[1]
             else:
                 spectrograms, labels = batch_data
 
@@ -238,8 +234,8 @@ def generate_predictions_and_log_errors(
     with torch.no_grad():
         desc = "Generating predictions (TTA)" if use_tta else "Generating predictions"
         for batch_idx, batch_data in enumerate(tqdm(data_loader, desc=desc)):
-            if len(batch_data) == 3:
-                spectrograms, labels, indices = batch_data
+            if len(batch_data) >= 3:
+                spectrograms, labels, indices = batch_data[0], batch_data[1], batch_data[2]
                 indices = indices.cpu().numpy()
                 has_indices = True
             else:
@@ -290,7 +286,7 @@ def generate_predictions_and_log_errors(
                         'probabilities': [float(p) for p in prob]
                     })
 
-                    logging.error(f"MISCLASSIFIED - File: {filename}, True: {true_label_name}, Predicted: {pred_label_name} ({confidence:.1f}% confidence)")
+                    logging.debug(f"MISCLASSIFIED - File: {filename}, True: {true_label_name}, Predicted: {pred_label_name} ({confidence:.1f}% confidence)")
 
             all_predictions.extend(predictions)
             all_probabilities.extend(probabilities)

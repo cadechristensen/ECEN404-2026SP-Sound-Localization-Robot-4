@@ -20,7 +20,9 @@ if str(project_root) not in sys.path:
 from src.config import Config
 from src.train import BabyCryTrainer
 from src.evaluate import ModelEvaluator, run_significance_tests_summary
+from src.evaluation import EnsembleModel
 from src.dataset import DatasetManager
+from src.preprocessed_dataset import PreprocessedDatasetManager
 from src.inference import BabyCryPredictor
 from src.utils import (
     setup_logging, save_experiment_config, print_system_info,
@@ -95,7 +97,7 @@ def evaluate_model(
     bootstrap_confidence_level: float = 0.95,
     run_significance_tests: bool = False,
     baseline_accuracy: float = 0.95,
-    apply_temperature_scaling: bool = False
+    apply_temperature_scaling: bool = True
 ):
     """
     Evaluate a trained model.
@@ -109,7 +111,7 @@ def evaluate_model(
         bootstrap_confidence_level: Confidence level for CIs (default: 0.95)
         run_significance_tests: Whether to run statistical significance tests (default: False)
         baseline_accuracy: Baseline benchmark accuracy for comparison (default: 0.95)
-        apply_temperature_scaling: Whether to apply temperature scaling calibration (default: False)
+        apply_temperature_scaling: Whether to apply temperature scaling calibration (default: True)
     """
     logging.info("=" * 60)
     logging.info("STARTING MODEL EVALUATION")
@@ -136,15 +138,66 @@ def evaluate_model(
 
     # Initialize evaluator
     evaluator = ModelEvaluator(config)
-    evaluator.load_model(model_path)
 
-    # Prepare dataset
-    dataset_manager = DatasetManager(config)
-    train_dataset, val_dataset, test_dataset = dataset_manager.prepare_datasets()
-    # Use num_workers=0 for evaluation to avoid multiprocessing issues on Windows
-    train_loader, val_loader, test_loader = dataset_manager.create_data_loaders(
-        train_dataset, val_dataset, test_dataset, num_workers=0
-    )
+    # Load ensemble if enabled and checkpoint metadata exists
+    if config.USE_ENSEMBLE:
+        results_dir_for_ensemble = model_path.parent
+        ensemble_metadata_path = results_dir_for_ensemble / "ensemble_checkpoints.json"
+        if ensemble_metadata_path.exists():
+            logging.info("USE_ENSEMBLE=True — loading ensemble model from checkpoints")
+            ensemble_model = EnsembleModel.from_results_dir(
+                results_dir_for_ensemble, config, evaluator.device
+            )
+            evaluator.model = ensemble_model
+        else:
+            logging.warning("USE_ENSEMBLE=True but no ensemble_checkpoints.json found — falling back to single model")
+            evaluator.load_model(model_path)
+    else:
+        evaluator.load_model(model_path)
+
+    # Prepare dataset — must mirror the same split path used during training so
+    # the test indices are identical and there is no train/test overlap.
+    if config.USE_PREPROCESSED:
+        preprocessed_base = Path(config.PREPROCESSED_DIR)
+        hash_dirs = sorted(preprocessed_base.glob("*/")) if preprocessed_base.exists() else []
+        if not hash_dirs:
+            raise FileNotFoundError(
+                f"No preprocessed data found in {preprocessed_base}. "
+                "Run preprocess_dataset.py first, or set config.USE_PREPROCESSED=False."
+            )
+        if len(hash_dirs) > 1:
+            logging.warning(
+                f"Multiple preprocessed directories found in {preprocessed_base}; "
+                f"using the last (most recent) entry: {hash_dirs[-1].name}"
+            )
+        actual_dir = hash_dirs[-1]  # Use last (most recent) sorted entry — matches train.py
+        logging.info(f"Evaluation using preprocessed data from: {actual_dir}")
+        dataset_manager = PreprocessedDatasetManager(actual_dir, config)
+        train_indices, val_indices, test_indices = dataset_manager.create_splits(
+            train_ratio=config.TRAIN_RATIO,
+            val_ratio=config.VAL_RATIO,
+            test_ratio=config.TEST_RATIO,
+        )
+        train_dataset, val_dataset, test_dataset = dataset_manager.create_datasets(
+            train_indices, val_indices, test_indices, augment_train=False
+        )
+        # Use num_workers=0 for evaluation to avoid multiprocessing issues on Windows
+        train_loader = torch.utils.data.DataLoader(
+            train_dataset, batch_size=config.BATCH_SIZE, shuffle=False, num_workers=0
+        )
+        val_loader = torch.utils.data.DataLoader(
+            val_dataset, batch_size=config.BATCH_SIZE, shuffle=False, num_workers=0
+        )
+        test_loader = torch.utils.data.DataLoader(
+            test_dataset, batch_size=config.BATCH_SIZE, shuffle=False, num_workers=0
+        )
+    else:
+        dataset_manager = DatasetManager(config)
+        train_dataset, val_dataset, test_dataset = dataset_manager.prepare_datasets()
+        # Use num_workers=0 for evaluation to avoid multiprocessing issues on Windows
+        train_loader, val_loader, test_loader = dataset_manager.create_data_loaders(
+            train_dataset, val_dataset, test_dataset, num_workers=0
+        )
 
     # Apply temperature scaling if requested
     if apply_temperature_scaling:
@@ -509,11 +562,11 @@ def main():
         help='Baseline benchmark accuracy for comparison (default: 0.95)'
     )
 
-    # Temperature scaling argument
+    # Temperature scaling argument (on by default — critical for calibration)
     parser.add_argument(
-        '--temperature-scaling',
+        '--no-temperature-scaling',
         action='store_true',
-        help='Apply temperature scaling calibration on validation set to improve confidence calibration'
+        help='Skip temperature scaling calibration (not recommended — calibration is critical for threshold-based decisions)'
     )
 
     args = parser.parse_args()
@@ -618,7 +671,7 @@ def main():
                 bootstrap_confidence_level=args.confidence_level,
                 run_significance_tests=args.significance_tests,
                 baseline_accuracy=args.baseline_accuracy,
-                apply_temperature_scaling=args.temperature_scaling
+                apply_temperature_scaling=not args.no_temperature_scaling
             )
 
         elif args.action == 'analyze':

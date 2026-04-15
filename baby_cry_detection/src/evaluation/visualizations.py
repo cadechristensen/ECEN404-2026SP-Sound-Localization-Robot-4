@@ -23,7 +23,8 @@ import logging
 def plot_confusion_matrix(
     cm: np.ndarray,
     class_labels: List[str],
-    results_dir: Path
+    results_dir: Path,
+    dataset_name: str = "test"
 ) -> None:
     """
     Plot and save confusion matrix with detailed analysis.
@@ -32,6 +33,7 @@ def plot_confusion_matrix(
         cm: Confusion matrix
         class_labels: List of class label names
         results_dir: Directory to save the plot
+        dataset_name: Name of the dataset split (train/val/test) — used in filename
     """
     plots_dir = results_dir / "plots"
     plots_dir.mkdir(parents=True, exist_ok=True)
@@ -64,7 +66,7 @@ def plot_confusion_matrix(
     axes[2].set_xlabel('Predicted Label', fontsize=12)
 
     plt.tight_layout()
-    plt.savefig(plots_dir / "confusion_matrix.png", dpi=300, bbox_inches='tight')
+    plt.savefig(plots_dir / f"confusion_matrix_{dataset_name}.png", dpi=300, bbox_inches='tight')
     plt.close()
 
     logging.info(f"Enhanced confusion matrices saved to {plots_dir}")
@@ -101,7 +103,8 @@ def plot_roc_curve(
     y_true: np.ndarray,
     y_proba: np.ndarray,
     class_labels: List[str],
-    results_dir: Path
+    results_dir: Path,
+    dataset_name: str = "test"
 ) -> None:
     """
     Plot and save ROC curve.
@@ -111,6 +114,7 @@ def plot_roc_curve(
         y_proba: Prediction probabilities
         class_labels: List of class label names
         results_dir: Directory to save the plot
+        dataset_name: Name of the dataset split (train/val/test) — used in filename
     """
     if len(class_labels) != 2:
         logging.warning("ROC curve only applicable for binary classification")
@@ -135,7 +139,7 @@ def plot_roc_curve(
     plt.grid(True, alpha=0.3)
     plt.tight_layout()
 
-    plot_path = plots_dir / "roc_curve.png"
+    plot_path = plots_dir / f"roc_curve_{dataset_name}.png"
     plt.savefig(plot_path, dpi=300, bbox_inches='tight')
     plt.close()
 
@@ -146,7 +150,8 @@ def plot_precision_recall_curve(
     y_true: np.ndarray,
     y_proba: np.ndarray,
     class_labels: List[str],
-    results_dir: Path
+    results_dir: Path,
+    dataset_name: str = "test"
 ) -> None:
     """
     Plot and save Precision-Recall curve.
@@ -156,6 +161,7 @@ def plot_precision_recall_curve(
         y_proba: Prediction probabilities
         class_labels: List of class label names
         results_dir: Directory to save the plot
+        dataset_name: Name of the dataset split (train/val/test) — used in filename
     """
     if len(class_labels) != 2:
         logging.warning("PR curve only applicable for binary classification")
@@ -185,7 +191,7 @@ def plot_precision_recall_curve(
     plt.grid(True, alpha=0.3)
     plt.tight_layout()
 
-    plot_path = plots_dir / "precision_recall_curve.png"
+    plot_path = plots_dir / f"precision_recall_curve_{dataset_name}.png"
     plt.savefig(plot_path, dpi=300, bbox_inches='tight')
     plt.close()
 
@@ -219,7 +225,11 @@ def plot_training_history(
     ax1.set_title('Model Loss')
     ax1.set_xlabel('Epoch')
     ax1.set_ylabel('Loss')
-    ax1.set_ylim(0, 0.1)
+    all_losses = list(history['train_loss']) + list(history['val_loss'])
+    loss_min = min(all_losses)
+    loss_max = max(all_losses)
+    loss_margin = (loss_max - loss_min) * 0.1
+    ax1.set_ylim(max(0, loss_min - loss_margin), loss_max + loss_margin)
     ax1.legend()
     ax1.grid(True, alpha=0.3)
 
@@ -228,7 +238,11 @@ def plot_training_history(
     ax2.set_title('Model Accuracy')
     ax2.set_xlabel('Epoch')
     ax2.set_ylabel('Accuracy')
-    ax2.set_ylim(0.6, 1.0)
+    all_accs = list(history['train_acc']) + list(history['val_acc'])
+    acc_min = min(all_accs)
+    acc_max = max(all_accs)
+    acc_margin = (acc_max - acc_min) * 0.1
+    ax2.set_ylim(max(0, acc_min - acc_margin), min(1.0, acc_max + acc_margin))
     ax2.legend()
     ax2.grid(True, alpha=0.3)
 

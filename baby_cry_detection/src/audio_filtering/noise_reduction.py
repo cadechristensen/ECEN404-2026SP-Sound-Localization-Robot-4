@@ -43,18 +43,18 @@ class NoiseReducer:
         Returns:
             Denoised audio tensor
         """
-        # Estimate noise from beginning of audio
-        noise_samples = int(noise_duration * self.sample_rate)
-        noise_segment = audio[:noise_samples] if len(audio) > noise_samples else audio[:len(audio)//4]
-
-        # Compute STFT of full audio and noise
+        # Compute STFT of full audio
         stft_audio = torch.stft(audio, n_fft=self.n_fft,
                                hop_length=self.hop_length, return_complex=True)
-        stft_noise = torch.stft(noise_segment, n_fft=self.n_fft,
-                               hop_length=self.hop_length, return_complex=True)
 
-        # Estimate noise power spectrum
-        noise_power = torch.mean(torch.abs(stft_noise) ** 2, dim=-1, keepdim=True)
+        # Minimum-statistics noise estimation: use the bottom 20% lowest-energy
+        # frames instead of the first N frames. In a detection-triggered buffer
+        # the first frames often contain cry audio, making them a poor noise reference.
+        magnitude = torch.abs(stft_audio)
+        frame_energies = torch.mean(magnitude ** 2, dim=0)  # energy per frame
+        n_noise_frames = max(1, frame_energies.shape[0] // 5)
+        _, noise_frame_indices = torch.topk(frame_energies, n_noise_frames, largest=False)
+        noise_power = torch.mean(magnitude[:, noise_frame_indices] ** 2, dim=-1, keepdim=True)
 
         # Apply spectral subtraction
         audio_magnitude = torch.abs(stft_audio)

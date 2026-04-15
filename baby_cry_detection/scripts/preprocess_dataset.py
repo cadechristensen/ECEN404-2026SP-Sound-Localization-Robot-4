@@ -3,8 +3,9 @@ Offline preprocessing pipeline for baby cry detection.
 Pre-computes spectrograms and saves them to disk for fast training.
 
 Usage:
-    python scripts/preprocess_dataset.py --output data/processed/v1 --config base
+    python scripts/preprocess_dataset.py --output data/processed/v1
     python scripts/preprocess_dataset.py --output data/processed/v1 --dry-run  # Preview only
+    python scripts/preprocess_dataset.py --validate data/processed/v1/<hash>   # Validate cache
 """
 
 import sys
@@ -13,6 +14,7 @@ import argparse
 import hashlib
 import json
 import time
+import traceback
 import numpy as np
 from tqdm import tqdm
 import logging
@@ -74,12 +76,16 @@ def preprocess_dataset(
     Returns:
         Dictionary with preprocessing statistics
     """
-    # Initialize preprocessor (no augmentation for preprocessing)
+    # Offline preprocessing caches the raw mel spectrogram only.
+    # Advanced filtering (VAD, noise reduction) is intentionally excluded here:
+    # it would bake a fixed filter into the cache and prevent on-the-fly
+    # filtering experiments during training.  Changing this flag would
+    # invalidate the cache, so it is NOT sourced from config.
     preprocessor = AudioPreprocessor(config, use_advanced_filtering=False)
 
     # Collect all audio files
     logging.info("Collecting audio files...")
-    audio_files = collect_audio_files(config.DATA_DIR, config.SUPPORTED_FORMATS, multi_class=config.MULTI_CLASS_MODE)
+    audio_files = collect_audio_files(config.DATA_DIR, config.SUPPORTED_FORMATS)
 
     if not audio_files:
         raise ValueError(f"No audio files found in {config.DATA_DIR}")
@@ -117,14 +123,16 @@ def preprocess_dataset(
     manifest = {
         'files': [],
         'config_hash': config_hash,
-        'total_files': len(audio_files),
+        'input_files': len(audio_files),  # Total discovered audio files
         'label_counts': {}
+        # 'successful_files' is added just before saving (== len(manifest['files']))
     }
 
     # Statistics
     stats = {
         'processed': 0,
         'skipped': 0,
+        'too_short': 0,
         'failed': 0,
         'total_time': 0
     }
@@ -140,8 +148,10 @@ def preprocess_dataset(
             # Use relative path from DATA_DIR to preserve directory structure
             rel_path = file_path.relative_to(config.DATA_DIR)
 
-            # Create hash of the relative path to avoid filename collisions
-            path_hash = hashlib.md5(str(rel_path).encode()).hexdigest()[:12]
+            # Create hash of the relative path to avoid filename collisions.
+            # Use as_posix() to normalise separators so the hash is identical
+            # whether preprocessing runs on Windows or Linux.
+            path_hash = hashlib.md5(rel_path.as_posix().encode()).hexdigest()[:12]
 
             # Output filename: <hash>_<label>.npy
             output_filename = f"{path_hash}_{label}.npy"
@@ -149,27 +159,52 @@ def preprocess_dataset(
 
             # Check if already processed
             if output_path.exists() and not overwrite:
-                stats['skipped'] += 1
+                # Validate the cached file is not corrupt (zero-byte or truncated
+                # files pass the exists() check but will crash at training time).
+                try:
+                    arr = np.load(output_path, mmap_mode='r')
+                    if arr.size == 0:
+                        raise ValueError("empty array")
+                except Exception:
+                    logging.warning(f"Corrupt cache file, reprocessing: {output_path}")
+                    output_path.unlink(missing_ok=True)
+                else:
+                    stats['skipped'] += 1
 
-                # Add to manifest
-                manifest['files'].append({
-                    'original_path': str(rel_path),
-                    'preprocessed_path': output_filename,
-                    'label': label
-                })
+                    # Add to manifest and update label counts for skipped files too,
+                    # so label_counts reflects the full dataset on partial re-runs.
+                    manifest['files'].append({
+                        'original_path': str(rel_path),
+                        'preprocessed_path': output_filename,
+                        'label': label
+                    })
+                    manifest['label_counts'][label] = manifest['label_counts'].get(label, 0) + 1
 
-                continue
+                    continue
 
             if dry_run:
                 logging.info(f"Would process: {rel_path} -> {output_filename}")
                 stats['processed'] += 1
                 continue
 
+            # Check minimum audio duration before processing
+            waveform, _ = preprocessor.load_audio(file_path)
+            duration_s = len(waveform) / preprocessor.sample_rate
+            if duration_s < config.MIN_AUDIO_DURATION:
+                stats['too_short'] += 1
+                logging.info(
+                    f"Skipped (too short: {duration_s:.2f}s < "
+                    f"{config.MIN_AUDIO_DURATION}s): {rel_path}"
+                )
+                continue
+
             # Process audio file
             spectrogram = preprocessor.process_audio_file(file_path)
 
-            # Save as numpy array (memory-mapped for fast loading)
-            np.save(output_path, spectrogram.numpy())
+            # Save as numpy array (memory-mapped for fast loading).
+            # .detach().cpu() is defensive; process_audio_file currently returns
+            # a no-grad CPU tensor, but this guards against future changes.
+            np.save(output_path, spectrogram.detach().cpu().numpy())
 
             # Add to manifest
             manifest['files'].append({
@@ -192,6 +227,8 @@ def preprocess_dataset(
 
     # Save manifest
     if not dry_run:
+        manifest['successful_files'] = len(manifest['files'])
+        manifest['total_files'] = len(manifest['files'])  # alias expected by PreprocessedBabyCryDataset
         manifest_path = output_dir / "manifest.json"
         with open(manifest_path, 'w') as f:
             json.dump(manifest, f, indent=2)
@@ -205,6 +242,7 @@ def preprocess_dataset(
     logging.info(f"Total files: {len(audio_files)}")
     logging.info(f"Processed: {stats['processed']}")
     logging.info(f"Skipped (already exists): {stats['skipped']}")
+    logging.info(f"Skipped (too short < {config.MIN_AUDIO_DURATION}s): {stats['too_short']}")
     logging.info(f"Failed: {stats['failed']}")
     logging.info(f"Total time: {stats['total_time']:.2f} seconds")
     if stats['processed'] > 0:
@@ -266,9 +304,23 @@ def validate_preprocessed_data(preprocessed_dir: Path, config: Config) -> bool:
         logging.error(f"Manifest file not found: {manifest_path}")
         return False
 
+    # Verify file counts: manifest entries should match .npy files on disk
+    with open(manifest_path, 'r') as f:
+        manifest = json.load(f)
+
+    npy_count = len(list(preprocessed_dir.glob("*.npy")))
+    manifest_count = len(manifest.get('files', []))
+    if npy_count != manifest_count:
+        logging.warning(
+            f"File count mismatch: {npy_count} .npy files on disk vs "
+            f"{manifest_count} entries in manifest — cache may be incomplete."
+        )
+        return False
+
     logging.info("Preprocessed data validation: PASSED")
     logging.info(f"  Config hash: {current_hash}")
     logging.info(f"  Preprocessed on: {saved_config.get('timestamp', 'unknown')}")
+    logging.info(f"  Files: {manifest_count}")
 
     return True
 
@@ -348,8 +400,12 @@ Examples:
         is_valid = validate_preprocessed_data(validate_dir, config)
         sys.exit(0 if is_valid else 1)
 
-    # Preprocessing mode
+    # Preprocessing mode.
+    # Resolve relative paths against the project root (parent of scripts/) so
+    # the script works regardless of which directory it is invoked from.
     output_dir = Path(args.output)
+    if not output_dir.is_absolute():
+        output_dir = Path(__file__).parent.parent / output_dir
 
     logging.info("="*60)
     logging.info("BABY CRY DETECTION - OFFLINE PREPROCESSING")
@@ -377,8 +433,7 @@ Examples:
 
     except Exception as e:
         logging.error(f"Preprocessing failed: {e}")
-        import traceback
-        traceback.print_exc()
+        logging.error(traceback.format_exc())
         sys.exit(1)
 
 

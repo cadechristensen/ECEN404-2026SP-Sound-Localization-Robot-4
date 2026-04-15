@@ -7,7 +7,7 @@ import torch
 import logging
 from pathlib import Path
 import numpy as np
-from typing import Dict, Tuple
+from typing import Dict, List, Optional, Union
 
 try:
     from .config import Config
@@ -15,8 +15,7 @@ try:
     from .data_preprocessing import AudioPreprocessor
 except ImportError:
     import sys
-    from pathlib import Path as PathLib
-    src_dir = PathLib(__file__).parent
+    src_dir = Path(__file__).parent
     if str(src_dir) not in sys.path:
         sys.path.insert(0, str(src_dir))
     from config import Config  # type: ignore
@@ -50,8 +49,19 @@ class BabyCryPredictor:
         """
         logging.info(f"Loading model from {model_path}")
 
-        # Load checkpoint
-        checkpoint = torch.load(model_path, map_location=self.device, weights_only=False)
+        # Attempt the safe (weights_only=True) load first.  Quantized model
+        # checkpoints store a full nn.Module object (pickle) which cannot be
+        # loaded with weights_only=True; fall back to the full unpickle only
+        # in that case so state-dict checkpoints always use the safer path.
+        try:
+            checkpoint = torch.load(model_path, map_location=self.device, weights_only=True)
+        except Exception:
+            logging.warning(
+                f"Could not load {model_path} with weights_only=True "
+                "(quantized model or legacy format). "
+                "Falling back to full unpickle — ensure the checkpoint is from a trusted source."
+            )
+            checkpoint = torch.load(model_path, map_location=self.device, weights_only=False)
 
         # Handle different checkpoint formats
         if 'model' in checkpoint and not isinstance(checkpoint['model'], dict):
@@ -129,7 +139,7 @@ class BabyCryPredictor:
             logging.error(f"Prediction failed for {audio_path}: {e}")
             raise
 
-    def predict_with_threshold(self, audio_path: Path, threshold: float = None) -> Dict:
+    def predict_with_threshold(self, audio_path: Path, threshold: Optional[float] = None) -> Dict:
         """
         Predict with confidence threshold.
 
@@ -157,7 +167,7 @@ class BabyCryPredictor:
 
         return result
 
-    def predict_batch(self, audio_paths: list) -> list:
+    def predict_batch(self, audio_paths: List[Union[str, Path]]) -> List[Dict]:
         """
         Predict on multiple audio files.
 

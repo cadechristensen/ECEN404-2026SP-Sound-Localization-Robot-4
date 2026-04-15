@@ -1,3 +1,8 @@
+# DEPRECATED — use function_calls.py Infer class instead.
+# This file uses unique_classes=2, the old single-model checkpoint
+# (6_newdata_mic_dev_split1_model.h5), and hardcoded paths that no longer exist.
+# Production code uses Infer from function_calls.py with angle-specific models in models/.
+
 import os
 import sys
 import warnings

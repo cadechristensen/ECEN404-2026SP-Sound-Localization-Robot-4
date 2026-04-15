@@ -18,6 +18,10 @@ def merge_overlapping_segments(segments: List[Tuple[float, float]]) -> List[Tupl
     if not segments:
         return []
 
+    # Validate that every segment has start <= end before sorting.
+    for start, end in segments:
+        assert start <= end, f"Invalid segment: start ({start:.3f}) > end ({end:.3f})"
+
     # Sort segments by start time
     sorted_segments = sorted(segments, key=lambda x: x[0])
 

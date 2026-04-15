@@ -8,12 +8,16 @@ Calibrated probabilities help distinguish high-confidence cries from
 uncertain detections, reducing false positives.
 """
 
+import logging
 import torch
 import torch.nn as nn
 import numpy as np
 from typing import Tuple, Optional, List
-from sklearn.metrics import log_loss
-from scipy.optimize import minimize
+
+logger = logging.getLogger(__name__)
+
+# Minimum allowed temperature — prevents sign inversion of logits or NaN propagation
+_TEMPERATURE_MIN = 0.01
 
 
 class TemperatureScaling(nn.Module):
@@ -43,11 +47,14 @@ class TemperatureScaling(nn.Module):
         """
         Apply temperature scaling to logits.
 
+        Note: unlike TemperatureScaledModel.forward() which returns scaled logits,
+        this method applies softmax and returns calibrated probabilities directly.
+
         Args:
             logits: Model output logits (before softmax)
 
         Returns:
-            Temperature-scaled probabilities
+            Calibrated probabilities after temperature scaling and softmax (N, num_classes)
         """
         scaled_logits = logits / self.temperature
         return torch.softmax(scaled_logits, dim=1)
@@ -79,12 +86,17 @@ class TemperatureScaling(nn.Module):
 
         optimizer.step(eval_loss)
 
+        # Clamp to positive range — negative or near-zero T inverts class ordering / causes NaN
+        with torch.no_grad():
+            self.temperature.data = torch.clamp(self.temperature.data, min=_TEMPERATURE_MIN)
+
         # Return final loss
         with torch.no_grad():
             scaled_logits = logits / self.temperature
             final_loss = criterion(scaled_logits, labels).item()
 
-        print(f"Temperature scaling fitted: T = {self.temperature.item():.4f}, Loss = {final_loss:.4f}")
+        logger.info("Temperature scaling fitted: T = %.4f, Loss = %.4f",
+                    self.temperature.item(), final_loss)
         return final_loss
 
 
@@ -99,9 +111,20 @@ class ConfidenceCalibrator:
         """
         Initialize confidence calibrator.
 
+        .. deprecated::
+            Use :class:`TemperatureScaledModel` directly. This class duplicates
+            its functionality with fewer safeguards (no temperature clamp, no
+            ``torch.no_grad()`` on inference).
+
         Args:
             method: Calibration method ("temperature", "isotonic", "platt")
         """
+        import warnings
+        warnings.warn(
+            "ConfidenceCalibrator is deprecated. Use TemperatureScaledModel directly.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
         self.method = method
         self.calibrator = None
 
@@ -154,18 +177,18 @@ class ConfidenceCalibrator:
                 'method': self.method,
                 'calibrator_state': self.calibrator.state_dict() if hasattr(self.calibrator, 'state_dict') else None
             }, path)
-            print(f"Calibrator saved to {path}")
+            logger.info("Calibrator saved to %s", path)
 
     def load(self, path: str, num_classes: int = 2):
         """Load calibrator from file."""
-        checkpoint = torch.load(path, map_location='cpu', weights_only=False)
+        checkpoint = torch.load(path, map_location='cpu', weights_only=True)
         self.method = checkpoint['method']
 
         if self.method == "temperature":
             self.calibrator = TemperatureScaling(num_classes=num_classes)
             if checkpoint['calibrator_state'] is not None:
                 self.calibrator.load_state_dict(checkpoint['calibrator_state'])
-            print(f"Calibrator loaded from {path}")
+            logger.info("Calibrator loaded from %s", path)
 
 
 def compute_expected_calibration_error(probs: np.ndarray, labels: np.ndarray,
@@ -201,8 +224,12 @@ def compute_expected_calibration_error(probs: np.ndarray, labels: np.ndarray,
     total_samples = len(confidences)
 
     for bin_lower, bin_upper in zip(bin_lowers, bin_uppers):
-        # Find samples in this bin
-        in_bin = (confidences > bin_lower) & (confidences <= bin_upper)
+        # Half-open [lower, upper) interval; the final bin is closed [lower, 1] so
+        # that confidence=1.0 is included and results are consistent with _compute_mce.
+        if bin_upper == bin_boundaries[-1]:
+            in_bin = (confidences >= bin_lower) & (confidences <= bin_upper)
+        else:
+            in_bin = (confidences >= bin_lower) & (confidences < bin_upper)
         prop_in_bin = in_bin.sum() / total_samples
 
         if prop_in_bin > 0:
@@ -276,6 +303,12 @@ def threshold_optimization(probs: np.ndarray, labels: np.ndarray,
 
     elif metric == "precision" or metric == "recall":
         precision, recall, thresholds = precision_recall_curve(labels, probs)
+
+        # sklearn returns precision/recall of length n+1 but thresholds of length n.
+        # The last element is a sentinel (precision=1, recall=0) with no matching threshold.
+        # Trim to keep all three arrays aligned and avoid IndexError on best_idx lookup.
+        precision = precision[:-1]
+        recall = recall[:-1]
 
         if metric == "precision":
             # Find threshold with highest precision while maintaining reasonable recall
@@ -451,8 +484,9 @@ class TemperatureScaledModel(nn.Module):
         Returns:
             Calibrated probabilities (batch_size, num_classes)
         """
-        scaled_logits = self.forward(x)
-        return torch.softmax(scaled_logits, dim=1)
+        with torch.no_grad():
+            scaled_logits = self.forward(x)
+            return torch.softmax(scaled_logits, dim=1)
 
     def calibrate(
         self,
@@ -492,13 +526,13 @@ class TemperatureScaledModel(nn.Module):
         all_labels = []
 
         if verbose:
-            print("Collecting validation logits for temperature calibration...")
+            logger.info("Collecting validation logits for temperature calibration...")
 
         with torch.no_grad():
             for batch_data in val_loader:
                 # Handle different batch formats
-                if len(batch_data) == 3:
-                    spectrograms, labels, _ = batch_data
+                if len(batch_data) >= 3:
+                    spectrograms, labels = batch_data[0], batch_data[1]
                 else:
                     spectrograms, labels = batch_data
 
@@ -512,28 +546,32 @@ class TemperatureScaledModel(nn.Module):
         logits_tensor = torch.cat(all_logits, dim=0)
         labels_tensor = torch.cat(all_labels, dim=0).long()
 
-        # Move to device for optimization
+        # Move tensors and temperature parameter to device.
+        # Use .data surgery on the nn.Parameter so the registered parameter object
+        # (and the optimizer's reference to it) stays intact — .to(device) on a
+        # Parameter returns a plain Tensor and would silently break the gradient graph.
         logits_tensor = logits_tensor.to(device)
         labels_tensor = labels_tensor.to(device)
-        self.temperature = self.temperature.to(device)
+        self.temperature.data = self.temperature.data.to(device)
 
-        # Calculate initial metrics (before calibration, T=1.0)
+        # Reset temperature to 1.0 before measuring baseline so that initial metrics
+        # always reflect the un-calibrated model, even on re-calibration calls.
+        self.temperature.data.fill_(1.0)
+
+        # Calculate initial metrics at T=1.0 (uncalibrated baseline)
+        labels_np = labels_tensor.cpu().numpy()
         with torch.no_grad():
             initial_probs = torch.softmax(logits_tensor, dim=1).cpu().numpy()
             initial_nll = nn.CrossEntropyLoss()(logits_tensor, labels_tensor).item()
 
-        labels_np = labels_tensor.cpu().numpy()
         initial_ece = compute_expected_calibration_error(initial_probs, labels_np)
         initial_mce = self._compute_mce(initial_probs, labels_np)
 
         if verbose:
-            print(f"Initial metrics (T=1.0):")
-            print(f"  NLL: {initial_nll:.4f}")
-            print(f"  ECE: {initial_ece:.4f} ({initial_ece * 100:.2f}%)")
-            print(f"  MCE: {initial_mce:.4f} ({initial_mce * 100:.2f}%)")
-
-        # Reset temperature to 1.0 before optimization
-        self.temperature.data.fill_(1.0)
+            logger.info("Initial metrics (T=1.0):")
+            logger.info("  NLL: %.4f", initial_nll)
+            logger.info("  ECE: %.4f (%.2f%%)", initial_ece, initial_ece * 100)
+            logger.info("  MCE: %.4f (%.2f%%)", initial_mce, initial_mce * 100)
 
         # Optimize temperature using LBFGS
         optimizer = torch.optim.LBFGS(
@@ -551,13 +589,13 @@ class TemperatureScaledModel(nn.Module):
             return loss
 
         if verbose:
-            print("\nOptimizing temperature...")
+            logger.info("Optimizing temperature...")
 
         optimizer.step(closure)
 
-        # Ensure temperature is positive (numerical stability)
+        # Clamp to positive range — negative or near-zero T inverts class ordering / causes NaN
         with torch.no_grad():
-            self.temperature.data = torch.clamp(self.temperature.data, min=0.01)
+            self.temperature.data = torch.clamp(self.temperature.data, min=_TEMPERATURE_MIN)
 
         # Calculate final metrics (after calibration)
         with torch.no_grad():
@@ -590,15 +628,16 @@ class TemperatureScaledModel(nn.Module):
         self._calibration_history.append(result)
 
         if verbose:
-            print(f"\nCalibration complete!")
-            print(f"  Optimal temperature: {result['optimal_temperature']:.4f}")
-            print(f"  NLL: {initial_nll:.4f} -> {final_nll:.4f} ({nll_improvement:+.2f}%)")
-            print(f"  ECE: {initial_ece:.4f} -> {final_ece:.4f} ({ece_improvement:+.2f}%)")
-            print(f"  MCE: {initial_mce:.4f} -> {final_mce:.4f} ({mce_improvement:+.2f}%)")
+            logger.info("Calibration complete!")
+            logger.info("  Optimal temperature: %.4f", result['optimal_temperature'])
+            logger.info("  NLL: %.4f -> %.4f (%+.2f%%)", initial_nll, final_nll, nll_improvement)
+            logger.info("  ECE: %.4f -> %.4f (%+.2f%%)", initial_ece, final_ece, ece_improvement)
+            logger.info("  MCE: %.4f -> %.4f (%+.2f%%)", initial_mce, final_mce, mce_improvement)
 
         return result
 
-    def _compute_mce(self, probs: np.ndarray, labels: np.ndarray, n_bins: int = 10) -> float:
+    @staticmethod
+    def _compute_mce(probs: np.ndarray, labels: np.ndarray, n_bins: int = 10) -> float:
         """Compute Maximum Calibration Error (MCE)."""
         if len(probs.shape) > 1:
             confidences = np.max(probs, axis=1)
@@ -639,7 +678,7 @@ class TemperatureScaledModel(nn.Module):
             'calibration_history': self._calibration_history,
         }
         torch.save(save_dict, save_path)
-        print(f"Calibrated model saved to {save_path}")
+        logger.info("Calibrated model saved to %s", save_path)
 
     @classmethod
     def load_calibrated_model(
@@ -659,7 +698,7 @@ class TemperatureScaledModel(nn.Module):
         Returns:
             TemperatureScaledModel with loaded weights and temperature
         """
-        checkpoint = torch.load(load_path, map_location=device, weights_only=False)
+        checkpoint = torch.load(load_path, map_location=device, weights_only=True)
 
         # Load model weights
         model.load_state_dict(checkpoint['model_state_dict'])
@@ -671,16 +710,18 @@ class TemperatureScaledModel(nn.Module):
         wrapper._calibration_history = checkpoint.get('calibration_history', [])
         wrapper.to(device)
 
-        print(f"Loaded calibrated model with T={checkpoint['temperature']:.4f}")
+        logger.info("Loaded calibrated model with T=%.4f", checkpoint['temperature'])
         return wrapper
 
     def eval(self) -> "TemperatureScaledModel":
         """Set model to evaluation mode."""
+        super().eval()
         self.model.eval()
         return self
 
     def train(self, mode: bool = True) -> "TemperatureScaledModel":
         """Set model training mode (temperature is always in eval mode)."""
+        super().train(mode)
         self.model.train(mode)
         return self
 

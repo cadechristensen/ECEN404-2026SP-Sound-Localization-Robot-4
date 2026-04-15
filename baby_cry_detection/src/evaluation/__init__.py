@@ -14,6 +14,7 @@ from .core import ModelEvaluator
 from .metrics import (
     calculate_metrics,
     calculate_calibration_metrics,
+    calculate_deployment_threshold_metrics,
     calculate_ece
 )
 from .analysis import (
@@ -47,6 +48,7 @@ __all__ = [
     'ModelEvaluator',
     'calculate_metrics',
     'calculate_calibration_metrics',
+    'calculate_deployment_threshold_metrics',
     'calculate_ece',
     'paired_t_test',
     'wilcoxon_signed_rank_test',

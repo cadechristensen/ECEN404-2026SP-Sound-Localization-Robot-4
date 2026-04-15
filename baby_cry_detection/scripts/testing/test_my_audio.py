@@ -3,7 +3,7 @@ Test your own audio files with acoustic feature-based filtering.
 
 Usage:
     python scripts/testing/test_my_audio.py my_audio.wav
-    python scripts/testing/test_my_audio.py my_audio.wav --threshold 0.7 --plot --acoustic
+    python scripts/testing/test_my_audio.py my_audio.wav --threshold 0.92 --plot --acoustic
     python scripts/testing/test_my_audio.py my_audio.wav --model other_model.pth
 """
 
@@ -23,7 +23,7 @@ import matplotlib.pyplot as plt
 from matplotlib.ticker import FuncFormatter
 import numpy as np
 from src.config import Config
-from src.audio_filter import BabyCryAudioFilter
+from src.audio_filtering import BabyCryAudioFilter
 from src.data_preprocessing import AudioPreprocessor
 
 
@@ -530,7 +530,7 @@ if __name__ == "__main__":
 Examples:
   # Run with default model:
   python scripts/testing/test_my_audio.py my_baby_cry.wav
-  python scripts/testing/test_my_audio.py my_baby_cry.wav --threshold 0.7 --plot
+  python scripts/testing/test_my_audio.py my_baby_cry.wav --threshold 0.92 --plot
 
   # Use a different model:
   python scripts/testing/test_my_audio.py my_baby_cry.wav --model other_model.pth
