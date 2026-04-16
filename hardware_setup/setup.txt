@@ -1,9 +1,9 @@
 # 1. Navigate to project
-cd ~/home/bthz/Sound-Localization
-cd /home/bthz/Sound-Localization
+cd ~/home/bthz/Sound-Localization-Team-4
+cd /home/bthz/Sound-Localization-Team-4
 
 # 2. Run setup (before venv — only needs root + system tools)
-chmod +x ~/Sound-Localization/hardware_setup/setup.sh  # compile
+chmod +x ~/Sound-Localization-Team-4/hardware_setup/setup.sh  # compile
 sudo ./hardware_setup/setup.sh              # verify only
 sudo ./hardware_setup/setup.sh 0x50         # verify + set gain to +20 dB
 sudo ./hardware_setup/setup.sh 0x7C         # verify + set gain to +31 dB
@@ -13,6 +13,10 @@ source ~/baby-monitor-env/bin/activate
 deactivate
 sudo shutdown -h now
 
+cd /home/bthz/Sound-Localization-Team-4
+sudo ./hardware_setup/setup.sh 0x7C
+source ~/baby-monitor-env/bin/activate
+ngrok http 5000
 
 # ============================================================
 #  1. VERIFY HARDWARE

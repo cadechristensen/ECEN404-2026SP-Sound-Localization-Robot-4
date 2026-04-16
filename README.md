@@ -167,7 +167,8 @@ Texas A&M University · Electrical & Computer Engineering · Spring 2026.
 - CryCeleb2023, ICSD, and Donate-a-Cry dataset contributors
 - LibriSpeech (adult-speech hard negatives) and ESC-50 (environmental sounds)
 - PyTorch, torchaudio, librosa, and the broader open-source audio-ML ecosystem
-
+- S. Adavanne, "DOAnet: Differentiable Tracking-Based Training of Deep Learning Sound Source Localizers." GitHub. [Online]. Available: https://github.com/sharathadavanne/doa-net/blob/master/README.md
+- DCASE Community, "Detection and Classification of Acoustic Scenes and Events." [Online]. Available: https://dcase.community/
 ---
 
 ## License
