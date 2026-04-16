@@ -25,12 +25,16 @@ Baud 115200, line-terminated ASCII, half-duplex.
 
 | Direction | Message | Meaning |
 |-----------|---------|---------|
-| Pi → ESP32 | `NAV angle=<deg> dist_ft=<ft>\n` | Drive to bearing (0° forward, positive = right) + distance |
+| Pi → ESP32 | `NAV angle=<deg> dist_ft=<ft>\n` | Drive to bearing (0° forward, positive = right) + distance. `dist_ft ≈ 0.01` is a turn-only command (used by the Pi's FINAL_TURN state) — ESP32 turns, sees `remaining_m < ARRIVAL_THRESHOLD`, replies `READY`. |
 | Pi → ESP32 | `CANCEL\n` | Abort the current NAV and return to idle |
-| ESP32 → Pi | `READY\n` | Arrived at target |
-| ESP32 → Pi | `OBSTACLE\n` | Obstacle detected — entering wall-following avoidance |
-| ESP32 → Pi | `RELISTEN\n` | Dead end — orchestrator should re-localize |
-| ESP32 → Pi | `BUMPED\n` | Bump sensor triggered — firmware halts |
+| ESP32 → Pi | `READY heading=<float>\n` | Arrived at target; includes cumulative `world_heading` |
+| ESP32 → Pi | `OBSTACLE\n` | Obstacle detected — entering wall-following avoidance (non-terminal, no heading) |
+| ESP32 → Pi | `RELISTEN heading=<float>\n` | Dead end — orchestrator should re-localize; includes cumulative `world_heading` |
+| ESP32 → Pi | `BUMPED heading=<float>\n` | Bump sensor triggered — firmware halts; includes cumulative `world_heading` |
+
+### World-frame heading tracking
+
+A module-level `world_heading` variable integrates the gyro *continuously* — it is never reset by `reset_heading()` (which only clears the PID drive-correction `heading`). `world_heading` is updated in three places: `update_heading_and_drive()`, `turn_by_angle()`, and the main drive loop. Every terminal UART reply appends `heading=<world_heading:.1f>` so the Raspberry Pi can reason about the robot's absolute orientation across events (used by the Pi's FINAL_TURN world-frame cross-check). The heading is cumulative since ESP32 boot and can exceed 360°; the Pi wraps it to [-180, 180) for signed-delta comparisons.
 
 ---
 

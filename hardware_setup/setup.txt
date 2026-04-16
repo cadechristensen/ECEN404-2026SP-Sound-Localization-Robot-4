@@ -3,10 +3,10 @@ cd ~/home/bthz/Sound-Localization
 cd /home/bthz/Sound-Localization
 
 # 2. Run setup (before venv — only needs root + system tools)
-chmod +x ~/Sound-Localization/setup.sh  # compile
-sudo ./setup.sh              # verify only
-sudo ./setup.sh 0x50         # verify + set gain to +20 dB
-sudo ./setup.sh 0x7C         # verify + set gain to +31 dB
+chmod +x ~/Sound-Localization/hardware_setup/setup.sh  # compile
+sudo ./hardware_setup/setup.sh              # verify only
+sudo ./hardware_setup/setup.sh 0x50         # verify + set gain to +20 dB
+sudo ./hardware_setup/setup.sh 0x7C         # verify + set gain to +31 dB
 
 # 3. Activate venv (after setup — needed for recording scripts)
 source ~/baby-monitor-env/bin/activate
@@ -109,8 +109,8 @@ pa.terminate()
 # ============================================================
 
 # Record with arecord
-arecord -D hw:T20 -c 8 -r 48000 -f S32_LE -d 5 <filename>.wav
-sox <filename>.wav -n stats
+arecord -D hw:T20 -c 8 -r 48000 -f S32_LE -d 5 test.wav
+sox test.wav -n stats
 
 # Run recording script
 python Pi_Integration/record.py --device-name "TI USB Audio" --duration 10 --label throwaway -q

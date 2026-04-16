@@ -118,11 +118,9 @@ baby_cry_detection/
 │   │   ├── EVALUATION_GUIDE.md
 │   │   ├── INFERENCE_MODEL_GUIDE.md
 │   │   └── PREPROCESSING_GUIDE.md
-│   ├── QUICK_REFERENCE.md
 │   ├── DATASET_CREDITS.md
 │   ├── DATASET_SUMMARY.md
-│   ├── TEST_YOUR_AUDIO.md
-│   └── VISUALIZATION_GUIDE.md
+│   └── TEST_YOUR_AUDIO.md
 │
 ├── data/                               # Training data
 │   ├── cry_baby/                       # Positive samples (~3,928 baby cry files)

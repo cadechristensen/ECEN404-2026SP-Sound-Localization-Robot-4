@@ -12,7 +12,7 @@ uart = UART(1, baudrate=115200, tx=Pin(17), rx=Pin(16), timeout=50)
 print("UART initialized")
 
 # =============================================================================
-# MOTOR SETUP (Sabertooth R/C Mode)
+# MOTOR SETUP (Sabertooth R/C Mode),
 # =============================================================================
 PWM_FREQ = 50
 motor_left = PWM(Pin(12), freq=PWM_FREQ)
@@ -79,7 +79,7 @@ def check_bumps():
 
 def bump_halt():
     stop()
-    uart.write("BUMPED\n")
+    uart.write(f"BUMPED heading={world_heading:.1f}\n")
     print("!!! BUMP — EMERGENCY HALT — power cycle to restart !!!")
     led = Pin(2, Pin.OUT)
     while True:
@@ -105,6 +105,7 @@ print("MPU6050 initialized")
 
 z_offset = 0.0
 heading = 0.0
+world_heading = 0.0  # cumulative gyro integration, NEVER reset — reported to Pi for world-frame reasoning
 last_gyro_t = ticks_us()
 
 
@@ -135,12 +136,13 @@ def reset_heading():
 
 
 def update_heading_and_drive():
-    global heading, last_gyro_t
+    global heading, world_heading, last_gyro_t
     gz = read_gyro_z()
     now = ticks_us()
     dt = ticks_diff(now, last_gyro_t) / 1_000_000.0
     last_gyro_t = now
     heading += gz * dt
+    world_heading += gz * dt
     correction = max(
         -MAX_CORRECTION_US, min(MAX_CORRECTION_US, int(HEADING_KP * heading))
     )
@@ -165,6 +167,7 @@ def drive_ms(duration_ms):
 # =============================================================================
 def turn_by_angle(target_deg, tolerance=2.0, timeout_ms=15000):
     """Positive = right, negative = left."""
+    global world_heading
     if abs(target_deg) < 1:
         return 0.0
     accumulated = 0.0
@@ -185,6 +188,7 @@ def turn_by_angle(target_deg, tolerance=2.0, timeout_ms=15000):
         dt = ticks_diff(now, last_time) / 1_000_000.0
         last_time = now
         accumulated += gz * dt
+        world_heading += gz * dt
         sleep_ms(5)
     stop()
     sleep_ms(100)
@@ -225,7 +229,7 @@ def make_ultrasonic(trig, echo):
 physical_sensors = {
     "rear_physical": make_ultrasonic(33, 13),
     "right_physical": make_ultrasonic(19, 21),
-    "left_physical": make_ultrasonic(4, 0),
+    "left_physical": make_ultrasonic(4, 15),
 }
 
 ultra = {
@@ -287,11 +291,6 @@ SENSORS_ENABLED = True
 SAFE_FRONT = 50
 SAFE_SIDE = 60
 CLEAR_SIDE = 75
-# Stop distance when the front ultrasonic is looking at the confirmed sound
-# source (not a generic obstacle). Keeps the robot body from pressing up
-# against the person holding the baby. See NAVIGATION PARAMETERS for the
-# target-vs-obstacle disambiguation constants.
-TARGET_CLEARANCE = 30  # cm
 
 # =============================================================================
 # UNIT CONVERSION
@@ -309,16 +308,6 @@ def feet_to_meters(ft):
 ARRIVAL_THRESHOLD = 0.762
 HEADING_OFFSET = 0
 DRIVE_TIMEOUT_MS = 30000
-# --- Target-vs-obstacle disambiguation ----------------------------------------
-# The front ultrasonic sensor sits physically forward of the mic array (which
-# is the navigation reference — SL predicts nav_distance_m from the mic array
-# to the sound source). So the sensor enters "obstacle range" of the target
-# well before the encoder reports arrival. We convert the ultrasonic reading
-# into a position-from-origin estimate and compare it to nav_distance_m to
-# decide whether the thing in front is the target or a real obstacle between
-# the robot and the target.
-SENSOR_OFFSET_M = 0.18  # 7 inches — front ultrasonic → mic array center
-TARGET_MATCH_TOLERANCE_M = 0.30  # slack for SL distance noise + target body depth
 
 nav_active = False
 nav_dir = None
@@ -454,7 +443,7 @@ while True:
         if remaining_m <= ARRIVAL_THRESHOLD:
             stop()
             nav_active = False
-            uart.write("READY\n")
+            uart.write(f"READY heading={world_heading:.1f}\n")
             print("Arrived — READY for communication")
             sleep_ms(50)
             continue
@@ -469,7 +458,6 @@ while True:
         timed_out = False
         obstacle_hit = False
         cancelled = False
-        target_reached = False
 
         while (count - start) < target_counts:
             if check_bumps():
@@ -491,6 +479,7 @@ while True:
             dt = ticks_diff(now, last_gyro_t) / 1_000_000.0
             last_gyro_t = now
             heading += gz * dt
+            world_heading += gz * dt
             correction = max(
                 -MAX_CORRECTION_US, min(MAX_CORRECTION_US, int(HEADING_KP * heading))
             )
@@ -499,48 +488,13 @@ while True:
             if SENSORS_ENABLED:
                 live_f = read_front()
                 if live_f < SAFE_FRONT:
-                    # Confirm before making any decision
+                    # Confirm before breaking out of drive loop
                     if confirm_obstacle_front():
-                        # Disambiguate: is this the sound source, or a real
-                        # obstacle between us and the source?
-                        #
-                        # The ultrasonic sensor sits SENSOR_OFFSET_M in front
-                        # of the mic array, so an object it sees at live_f cm
-                        # is at this position in nav coordinates (meters from
-                        # the mic's starting point for this NAV command):
-                        travelled_now = (
-                            distance_travelled + (count - start) * DIST_PER_COUNT
+                        print(
+                            f"Obstacle confirmed at {live_f:.0f}cm — entering avoidance"
                         )
-                        object_pos = travelled_now + SENSOR_OFFSET_M + (live_f / 100.0)
-
-                        if abs(object_pos - nav_distance_m) <= TARGET_MATCH_TOLERANCE_M:
-                            # It's the target. Close the gap to clearance.
-                            if live_f <= TARGET_CLEARANCE:
-                                print(
-                                    f"Target reached at {live_f:.0f}cm "
-                                    f"(clearance={TARGET_CLEARANCE}cm, "
-                                    f"object_pos={object_pos:.2f}m "
-                                    f"≈ target={nav_distance_m:.2f}m) — ARRIVED"
-                                )
-                                target_reached = True
-                                break
-                            # Target in view but still further than clearance
-                            # — keep approaching, next iteration will re-check.
-                            print(
-                                f"Target ahead at {live_f:.0f}cm "
-                                f"(object_pos={object_pos:.2f}m "
-                                f"≈ target={nav_distance_m:.2f}m) "
-                                f"— closing to {TARGET_CLEARANCE}cm clearance"
-                            )
-                        else:
-                            print(
-                                f"Real obstacle at {live_f:.0f}cm "
-                                f"(object_pos={object_pos:.2f}m "
-                                f"vs target={nav_distance_m:.2f}m) "
-                                f"— entering avoidance"
-                            )
-                            obstacle_hit = True
-                            break
+                        obstacle_hit = True
+                        break
                     # False reading — keep driving, confirm kept motors alive
 
             sleep_ms(10)
@@ -553,18 +507,10 @@ while True:
             cancelled = False
             continue
 
-        # Front ultrasonic saw the target, stopped at TARGET_CLEARANCE short
-        if target_reached:
-            nav_active = False
-            uart.write("READY\n")
-            print("Target acquired via front ultrasonic — READY for communication")
-            sleep_ms(50)
-            continue
-
         if timed_out and (count - start) == 0:
             print("Encoder failure — assuming arrived after timeout")
             nav_active = False
-            uart.write("READY\n")
+            uart.write(f"READY heading={world_heading:.1f}\n")
             sleep_ms(50)
             continue
 
@@ -639,7 +585,7 @@ while True:
                 avoid_state = WAITING
                 waiting_start = ticks_us()
                 avoid_dir = None
-                uart.write("RELISTEN\n")
+                uart.write(f"RELISTEN heading={world_heading:.1f}\n")
                 print("Sent RELISTEN after dead end")
 
         elif wall_dist > CLEAR_SIDE:
@@ -693,7 +639,7 @@ while True:
             avoid_state = WAITING
             waiting_start = ticks_us()
             avoid_dir = None
-            uart.write("RELISTEN\n")
+            uart.write(f"RELISTEN heading={world_heading:.1f}\n")
             print("Obstacle cleared — sent RELISTEN")
 
         else:

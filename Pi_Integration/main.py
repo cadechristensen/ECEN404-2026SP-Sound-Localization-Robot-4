@@ -12,6 +12,7 @@ State machine:
     LISTENING   -> Low-power cry detection active
     LOCALIZING  -> Cry detected, running sound localization
     NAVIGATING  -> ESP32 navigating to baby with obstacle avoidance
+    FINAL_TURN  -> Arrived, relisten once more and turn in place to face source
     ARRIVED     -> Robot at baby, streaming video + email sent
     RELISTEN    -> ESP32 hit dead end, re-localize
 
@@ -19,13 +20,6 @@ State machine:
     python Pi_Integration/main.py --device-name "TI USB Audio" -q
     python Pi_Integration/main.py --device-name "TI USB Audio" -q --no-app
     python Pi_Integration/main.py --device-index 0 -q
-
-# For testing at different pipeline depths, use test_mode.py:
-    python Pi_Integration/test_mode.py --device-name "TI USB Audio" --bcd -q
-    python Pi_Integration/test_mode.py --device-name "TI USB Audio" --bcd-sl -q
-    python Pi_Integration/test_mode.py --device-name "TI USB Audio" --bcd-sl-oa -q
-
-
 """
 
 import argparse
@@ -56,22 +50,36 @@ _alsa_error_handler = None
 logger = logging.getLogger(__name__)
 
 
+def _wrap_bearing(deg: float) -> float:
+    """Wrap a bearing to [-180, 180) for signed-delta comparisons."""
+    return ((deg + 180.0) % 360.0) - 180.0
+
+
 class State(enum.Enum):
     LISTENING = "LISTENING"
     LOCALIZING = "LOCALIZING"
     NAVIGATING = "NAVIGATING"
     ARRIVED = "ARRIVED"
     RELISTEN = "RELISTEN"
+    FINAL_TURN = "FINAL_TURN"
 
 
 class Orchestrator:
     """Central state machine coordinating all subsystems."""
 
-    ARRIVED_DURATION = 30.0    # seconds to stay in ARRIVED before returning to LISTENING
-    MAX_RELISTEN = 3           # max ESP32 RELISTEN responses allowed per cry event
-    RELISTEN_TIMEOUT = 60.0    # seconds to wait in RELISTEN for a fresh cry before giving up
-    NAV_TIMEOUT = 120.0        # seconds before treating ESP32 as hung
-    MIN_CRY_DURATION = 5.0     # minimum seconds of cry audio required for localization
+    ARRIVED_DURATION = 30.0  # seconds to stay in ARRIVED before returning to LISTENING
+    MAX_RELISTEN = 3  # max ESP32 RELISTEN responses allowed per cry event
+    RELISTEN_TIMEOUT = (
+        60.0  # seconds to wait in RELISTEN for a fresh cry before giving up
+    )
+    NAV_TIMEOUT = 120.0  # seconds before treating ESP32 as hung
+    MIN_CRY_DURATION = 5.0  # minimum seconds of cry audio required for localization
+    FINAL_TURN_TIMEOUT = 20.0  # seconds to wait for a fresh cry after ESP32 READY
+    FINAL_TURN_NAV_TIMEOUT = 10.0  # seconds to wait for ESP32 to ACK the turn-only NAV
+    FINAL_TURN_ANGLE_DEADBAND = (
+        5.0  # degrees — skip turn if refined angle is within this
+    )
+    FINAL_TURN_MAX_WORLD_DEVIATION = 45.0  # degrees — reject FINAL_TURN refinements that deviate more than this in world frame
 
     def __init__(self, args):
         self.state = State.LISTENING
@@ -84,7 +92,25 @@ class Orchestrator:
         # detection starts a new one.  The counter tells that new thread how many
         # relistens have already happened for the current cry event.
         self._relisten_count = 0
-        self._relisten_timer = None  # threading.Timer, active only while in RELISTEN state
+        self._relisten_timer = (
+            None  # threading.Timer, active only while in RELISTEN state
+        )
+        # FINAL_TURN state: after ESP32 READY, we relisten once more to
+        # refine the facing angle and turn in place before notifying.
+        self._final_turn_count = 0
+        self._final_turn_timer = None
+        self._final_turn_in_flight = (
+            False  # True while turn-NAV is awaiting ESP32 response
+        )
+        # World-frame heading tracking.
+        # _current_world_heading persists across events (robot physical orientation,
+        # updated on every terminal ESP32 reply).  _event_baseline_bearing is the
+        # world-frame bearing-to-source computed at the first LOCALIZING of THIS
+        # cry event; cleared in _return_to_listening.  Both None until the first
+        # ESP32 reply carries a heading= token (old firmware: stays None, sanity
+        # check is a no-op).
+        self._current_world_heading = None  # Optional[float], degrees
+        self._event_baseline_bearing = None  # Optional[float], degrees
         try:
             self.oa = ObstacleAvoidance()
         except Exception as e:
@@ -106,12 +132,13 @@ class Orchestrator:
 
         if not args.no_app:
             from FunctionCalls_App import MobileApp
+
             self.app = MobileApp()
         else:
             self.app = None
             logger.info("Mobile app disabled (--no-app)")
 
-        self.sl = SoundLocalization(single_model=getattr(args, 'single_model', None))
+        self.sl = SoundLocalization(single_model=getattr(args, "single_model", None))
 
         logger.info("All subsystems initialized")
 
@@ -135,10 +162,22 @@ class Orchestrator:
         """
         with self._state_lock:
             prev_state = self.state
-            was_navigating = prev_state in (State.NAVIGATING, State.LOCALIZING, State.RELISTEN)
+            was_navigating = prev_state in (
+                State.NAVIGATING,
+                State.LOCALIZING,
+                State.RELISTEN,
+                State.FINAL_TURN,
+            )
             # Atomically clear per-event state under the lock.
             self._cancel_relisten_timer_locked()
             self._relisten_count = 0
+            self._cancel_final_turn_timer_locked()
+            self._final_turn_count = 0
+            self._final_turn_in_flight = False
+            # Clear the per-event world-frame baseline so the next cry event
+            # starts fresh.  Do NOT clear _current_world_heading — that is the
+            # robot's physical orientation and persists across events.
+            self._event_baseline_bearing = None
             self.state = State.LISTENING
 
         if prev_state != State.LISTENING:
@@ -180,22 +219,35 @@ class Orchestrator:
             self._relisten_timer.cancel()
             self._relisten_timer = None
 
+    def _cancel_final_turn_timer(self) -> None:
+        """Cancel the final-turn silence timer if active.
+
+        Safe to call without holding the state lock — Timer.cancel() is
+        thread-safe.  Prefer _cancel_final_turn_timer_locked() for atomic
+        resets inside a state_lock block.
+        """
+        if self._final_turn_timer is not None:
+            self._final_turn_timer.cancel()
+            self._final_turn_timer = None
+
+    def _cancel_final_turn_timer_locked(self) -> None:
+        """Cancel the final-turn timer.  Caller must hold self._state_lock."""
+        if self._final_turn_timer is not None:
+            self._final_turn_timer.cancel()
+            self._final_turn_timer = None
+
     # ------------------------------------------------------------------
     #! Cry detection callback (runs on detector's thread)
     # ------------------------------------------------------------------
     def _on_cry_detected(self, detection) -> None:
         """Called by BabyCryDetection when a cry is confirmed.
 
-        Cries are accepted in BOTH LISTENING (fresh event) and RELISTEN
-        (continuing an event after ESP32 asked us to retry).  The relisten
-        counter is NOT reset here — it persists across the thread boundary
-        so _enter_relisten() can enforce MAX_RELISTEN across multiple
-        navigate attempts for the same baby.
+        Cries are accepted in LISTENING, RELISTEN (navigation-phase retry),
+        and FINAL_TURN (post-arrival angle refinement).  Inside FINAL_TURN,
+        a turn NAV already in-flight means this cry is ignored.
         """
-        # Write _last_detection atomically with the state change so the
-        # navigation thread always sees the matching detection object.
         with self._state_lock:
-            if self.state not in (State.LISTENING, State.RELISTEN):
+            if self.state not in (State.LISTENING, State.RELISTEN, State.FINAL_TURN):
                 if self.state == State.ARRIVED:
                     logger.warning(
                         "Cry detected while ARRIVED — robot already at baby, "
@@ -206,18 +258,50 @@ class Orchestrator:
                         f"Cry detected but state is {self.state.value} — ignoring"
                     )
                 return
+            if self.state == State.FINAL_TURN and self._final_turn_in_flight:
+                logger.info(
+                    "Cry in FINAL_TURN but turn-NAV already in flight — ignoring"
+                )
+                return
             if self._shutdown.is_set():
                 return
+
             prev_state = self.state
             self._last_detection = detection
-            self.state = State.LOCALIZING
 
-        # A fresh cry arrived in time — cancel the silence-timeout timer if
-        # we were in RELISTEN waiting for one.  Done outside the lock because
-        # Timer.cancel() is thread-safe and we don't want to hold the state
-        # lock across any I/O.
+            if prev_state == State.FINAL_TURN:
+                # Claim the next refinement attempt atomically: increment
+                # counter, set in-flight flag, cancel silence timer.
+                self._final_turn_count += 1
+                ft_count = self._final_turn_count
+                ft_budget_exhausted = ft_count > self.MAX_RELISTEN
+                if not ft_budget_exhausted:
+                    self._final_turn_in_flight = True
+                self._cancel_final_turn_timer_locked()
+            else:
+                self.state = State.LOCALIZING
+                ft_count = 0
+                ft_budget_exhausted = False
+
+        # --- I/O outside the lock ---
+
         if prev_state == State.RELISTEN:
             self._cancel_relisten_timer()
+
+        if prev_state == State.FINAL_TURN:
+            if ft_budget_exhausted:
+                logger.warning(
+                    f"FINAL_TURN retry budget exhausted ({self.MAX_RELISTEN}) — "
+                    "proceeding to ARRIVED"
+                )
+                self._finalize_arrival()
+                return
+            logger.info(
+                f"Cry in FINAL_TURN {ft_count}/{self.MAX_RELISTEN} "
+                f"(confidence={detection.confidence:.2%}) — refining angle"
+            )
+            threading.Thread(target=self._refine_angle_and_turn, daemon=True).start()
+            return
 
         logger.info(
             f"Cry confirmed (confidence={detection.confidence:.2%}), "
@@ -231,6 +315,44 @@ class Orchestrator:
     # ------------------------------------------------------------------
     #! UART communication with ESP32
     # ------------------------------------------------------------------
+    def _wait_for_esp32_response(self, timeout: float):
+        """Block up to `timeout` seconds for a terminal ESP32 response.
+
+        On a terminal reply, syncs `self._current_world_heading` from
+        `oa.last_response_heading` if the ESP32 supplied one.
+
+        Returns:
+            "READY", "RELISTEN", "BUMPED", or None on timeout or shutdown.
+        """
+        deadline = time.monotonic() + timeout
+
+        while not self._shutdown.is_set():
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                logger.error(f"ESP32 response timed out after {timeout:.0f}s")
+                return None
+
+            response = self.oa.wait_for_response(timeout=min(1.0, remaining))
+            if response in ("READY", "RELISTEN", "BUMPED"):
+                heading = self.oa.last_response_heading
+                if heading is not None:
+                    with self._state_lock:
+                        self._current_world_heading = heading
+                    logger.info(f"ESP32 world_heading: {heading:.1f}")
+                if response == "READY":
+                    logger.info("ESP32 ready — arrived at target")
+                elif response == "RELISTEN":
+                    logger.info("ESP32 obstacle avoided — re-localizing")
+                else:  # BUMPED
+                    logger.critical(
+                        "ESP32 BUMP SENSOR TRIGGERED — robot halted. "
+                        "Power cycle ESP32 to resume."
+                    )
+                return response
+
+        # Shutdown was requested
+        return None
+
     def _send_and_wait_esp32(self, angle_deg, distance_ft):
         """
         Send NAV command over UART and block until ESP32 replies.
@@ -241,33 +363,11 @@ class Orchestrator:
             None  if shutdown was requested, timeout, or BUMPED (emergency halt)
         """
         self.oa.send_nav_command(angle_deg, distance_ft)
-
-        deadline = time.monotonic() + self.NAV_TIMEOUT
-
-        while not self._shutdown.is_set():
-            remaining = deadline - time.monotonic()
-            if remaining <= 0:
-                logger.error(
-                    f"ESP32 navigation timed out after {self.NAV_TIMEOUT:.0f}s "
-                    "— returning to LISTENING"
-                )
-                return None
-
-            response = self.oa.wait_for_response(timeout=min(1.0, remaining))
-            if response == "READY":
-                logger.info("ESP32 ready — arrived at target")
-                return True
-            elif response == "RELISTEN":
-                logger.info("ESP32 obstacle avoided — re-localizing")
-                return False
-            elif response == "BUMPED":
-                logger.critical(
-                    "ESP32 BUMP SENSOR TRIGGERED — robot halted. "
-                    "Power cycle ESP32 to resume."
-                )
-                return None
-
-        # Shutdown was requested
+        resp = self._wait_for_esp32_response(self.NAV_TIMEOUT)
+        if resp == "READY":
+            return True
+        if resp == "RELISTEN":
+            return False
         return None
 
     # ------------------------------------------------------------------
@@ -285,7 +385,8 @@ class Orchestrator:
         with self._state_lock:
             detection = self._last_detection
         return self.bcd.extract_cry_audio_from_detection(
-            detection, min_duration=self.MIN_CRY_DURATION,
+            detection,
+            min_duration=self.MIN_CRY_DURATION,
         )
 
     # ------------------------------------------------------------------
@@ -323,7 +424,7 @@ class Orchestrator:
                 sample_rate=sr,
                 num_channels=filtered_audio.shape[1] if filtered_audio.ndim > 1 else 1,
             )
-            angle_deg = loc['direction_deg']
+            angle_deg = loc["direction_deg"]
 
             # Distance from raw audio (matches record_samtry.py)
             try:
@@ -331,7 +432,7 @@ class Orchestrator:
                 logger.info(f"ML distance prediction: {distance_ft:.1f} ft")
             except Exception as ml_err:
                 logger.error(f"ML distance prediction failed: {ml_err}")
-                distance_ft = loc['distance_ft']
+                distance_ft = loc["distance_ft"]
 
             logger.info(
                 f"Localization (relisten {self._relisten_count}/{self.MAX_RELISTEN}): "
@@ -342,14 +443,35 @@ class Orchestrator:
             self._return_to_listening()
             return
 
-        if (distance_ft <= 0 or not np.isfinite(distance_ft)
-                or not np.isfinite(angle_deg)):
+        if (
+            distance_ft <= 0
+            or not np.isfinite(distance_ft)
+            or not np.isfinite(angle_deg)
+        ):
             logger.warning(
                 f"Invalid localization (angle={angle_deg}, dist={distance_ft}) "
                 "— returning to LISTENING"
             )
             self._return_to_listening()
             return
+
+        # --- Set world-frame baseline on first LOCALIZING of this event ---
+        # Only set once per cry event: later relisten localizations do NOT
+        # overwrite — the baseline is the event's ORIGINAL bearing, used
+        # later to sanity-check FINAL_TURN refinements in world frame.
+        with self._state_lock:
+            if (
+                self._event_baseline_bearing is None
+                and self._current_world_heading is not None
+            ):
+                self._event_baseline_bearing = _wrap_bearing(
+                    self._current_world_heading + angle_deg
+                )
+                logger.info(
+                    f"Event baseline bearing: "
+                    f"{self._event_baseline_bearing:.1f} deg "
+                    f"(heading {self._current_world_heading:.1f} + angle {angle_deg:.1f})"
+                )
 
         # --- Navigate ---
         self._set_state(State.NAVIGATING)
@@ -367,7 +489,7 @@ class Orchestrator:
             return
 
         if arrived:
-            self._on_arrived()
+            self._enter_final_turn()
             return
 
         # ESP32 requested re-localization — hand off to _enter_relisten, which
@@ -432,9 +554,7 @@ class Orchestrator:
         # cancels it.  If nothing arrives, it fires _relisten_timeout_expired.
         # We assign under the lock so _cancel_relisten_timer_locked calls
         # from other threads see a consistent reference.
-        timer = threading.Timer(
-            self.RELISTEN_TIMEOUT, self._relisten_timeout_expired
-        )
+        timer = threading.Timer(self.RELISTEN_TIMEOUT, self._relisten_timeout_expired)
         timer.daemon = True
         with self._state_lock:
             # Defensive: if state changed during bcd.reset() (shutdown, race),
@@ -479,19 +599,213 @@ class Orchestrator:
         self._do_listening_cleanup(was_navigating=True)
 
     # ------------------------------------------------------------------
+    #! FINAL_TURN — relisten once more after ESP32 READY to face the source
+    # ------------------------------------------------------------------
+    def _enter_final_turn(self) -> None:
+        """Enter FINAL_TURN state after ESP32 reported READY.
+
+        Resets the final-turn counter and in-flight flag, re-arms BCD for
+        a fresh cry, and starts the silence-timeout timer.  Does NOT block —
+        the caller thread exits after this returns.
+        """
+        with self._state_lock:
+            prev = self.state
+            self._cancel_final_turn_timer_locked()
+            self._final_turn_count = 0
+            self._final_turn_in_flight = False
+            self.state = State.FINAL_TURN
+
+        logger.info(f"State: {prev.value} -> {State.FINAL_TURN.value}")
+        logger.info(
+            f"FINAL_TURN: waiting up to {self.FINAL_TURN_TIMEOUT:.0f}s for "
+            "a fresh cry to refine facing angle"
+        )
+
+        # Re-arm BCD so it can produce a new detection within the window.
+        # Do NOT call _return_to_listening — that would clear the whole event.
+        self.bcd.reset()
+
+        timer = threading.Timer(
+            self.FINAL_TURN_TIMEOUT, self._final_turn_timeout_expired
+        )
+        timer.daemon = True
+        with self._state_lock:
+            # Defensive: if state changed during bcd.reset() (shutdown, race),
+            # don't arm the timer.
+            if self.state == State.FINAL_TURN:
+                self._final_turn_timer = timer
+                timer.start()
+            else:
+                logger.info("State changed during FINAL_TURN setup — not arming timer")
+
+    def _final_turn_timeout_expired(self) -> None:
+        """Silence timeout elapsed — proceed to ARRIVED without refined turn."""
+        with self._state_lock:
+            # Refuse to fire if we've moved past FINAL_TURN or a refinement
+            # is already in-flight (that thread owns the transition).
+            if self.state != State.FINAL_TURN or self._final_turn_in_flight:
+                return
+            self._cancel_final_turn_timer_locked()
+        logger.info(
+            f"FINAL_TURN silence timeout ({self.FINAL_TURN_TIMEOUT:.0f}s) — "
+            "proceeding to ARRIVED without refined turn"
+        )
+        self._finalize_arrival()
+
+    def _refine_angle_and_turn(self) -> None:
+        """Re-run SL on a fresh cry and send a turn-only NAV.
+
+        Called from _on_cry_detected after a cry arrives in FINAL_TURN.
+        self._final_turn_in_flight is already True on entry.  On any
+        failure before the NAV is sent, re-arms the silence timer for
+        another retry (up to MAX_RELISTEN total).  Once the NAV is sent,
+        any ESP32 response finalizes arrival.
+        """
+        try:
+            cry_audio, sr, _raw_audio = self._get_localization_audio()
+        except Exception as e:
+            logger.error(f"FINAL_TURN: failed to get audio: {e}", exc_info=True)
+            self._resume_final_turn_wait()
+            return
+
+        if cry_audio is None:
+            logger.warning("FINAL_TURN: no cry audio extracted — resuming wait")
+            self._resume_final_turn_wait()
+            return
+
+        filtered_audio = self.bcd.filter_for_localization(cry_audio)
+        try:
+            loc = self.sl.localize(
+                audio_data=filtered_audio,
+                sample_rate=sr,
+                num_channels=filtered_audio.shape[1] if filtered_audio.ndim > 1 else 1,
+            )
+            angle_deg = loc["direction_deg"]
+            logger.info(f"FINAL_TURN refined angle: {angle_deg:.1f} deg")
+        except Exception as e:
+            logger.error(f"FINAL_TURN localization failed: {e}", exc_info=True)
+            self._resume_final_turn_wait()
+            return
+
+        if not np.isfinite(angle_deg):
+            logger.warning(f"FINAL_TURN: invalid angle ({angle_deg}) — resuming wait")
+            self._resume_final_turn_wait()
+            return
+
+        if abs(angle_deg) < self.FINAL_TURN_ANGLE_DEADBAND:
+            logger.info(
+                f"FINAL_TURN: angle {angle_deg:.1f} within deadband "
+                f"(±{self.FINAL_TURN_ANGLE_DEADBAND:.0f} deg) — skipping turn"
+            )
+            self._finalize_arrival()
+            return
+
+        # --- World-frame sanity check ---
+        # If we have both the event baseline and the current world heading,
+        # reject refinements that deviate too far from the original bearing
+        # (likely SL noise: close-range echoes, wrong DOAnet source pick).
+        with self._state_lock:
+            baseline = self._event_baseline_bearing
+            current_heading = self._current_world_heading
+        if baseline is not None and current_heading is not None:
+            refined_world_bearing = _wrap_bearing(current_heading + angle_deg)
+            delta = _wrap_bearing(refined_world_bearing - baseline)
+            if abs(delta) > self.FINAL_TURN_MAX_WORLD_DEVIATION:
+                logger.warning(
+                    f"FINAL_TURN: refined bearing {refined_world_bearing:.1f} "
+                    f"deviates {delta:+.1f} deg from baseline {baseline:.1f} "
+                    f"(> {self.FINAL_TURN_MAX_WORLD_DEVIATION:.0f}) — "
+                    "rejecting as SL noise, skipping turn"
+                )
+                self._finalize_arrival()
+                return
+            logger.info(
+                f"FINAL_TURN world-frame check OK: refined {refined_world_bearing:.1f}, "
+                f"baseline {baseline:.1f}, delta {delta:+.1f} deg"
+            )
+
+        try:
+            self.oa.send_turn_command(angle_deg)
+        except Exception as e:
+            logger.error(f"FINAL_TURN: failed to send turn command: {e}", exc_info=True)
+            self._finalize_arrival()
+            return
+
+        resp = self._wait_for_esp32_response(self.FINAL_TURN_NAV_TIMEOUT)
+        logger.info(f"FINAL_TURN: ESP32 response to turn: {resp}")
+        # Any response (READY / RELISTEN / BUMPED / timeout / shutdown) finalizes.
+        # We don't retry turn-NAVs — the robot is already at the baby.
+        self._finalize_arrival()
+
+    def _resume_final_turn_wait(self) -> None:
+        """After a failed refinement attempt, re-arm silence timer for another retry.
+
+        If the budget is exhausted or state has moved on, fall through to
+        ARRIVED instead.  Clears the in-flight flag so the next cry
+        callback is accepted.
+        """
+        with self._state_lock:
+            if self.state != State.FINAL_TURN:
+                return
+            self._final_turn_in_flight = False
+            if self._final_turn_count >= self.MAX_RELISTEN:
+                finalize = True
+                timer = None
+            else:
+                finalize = False
+                self._cancel_final_turn_timer_locked()
+                timer = threading.Timer(
+                    self.FINAL_TURN_TIMEOUT, self._final_turn_timeout_expired
+                )
+                timer.daemon = True
+                self._final_turn_timer = timer
+
+        if finalize:
+            logger.info("FINAL_TURN: retry budget exhausted after failure — ARRIVED")
+            self._finalize_arrival()
+        else:
+            timer.start()
+            logger.info(
+                f"FINAL_TURN: refinement failed — re-armed silence timer "
+                f"({self.FINAL_TURN_TIMEOUT:.0f}s for another attempt)"
+            )
+
+    # ------------------------------------------------------------------
     #! Arrival handling
     # ------------------------------------------------------------------
-    def _on_arrived(self) -> None:
-        """Robot has reached the baby."""
-        # Successful navigation — the cry event is resolved, so clear relisten
-        # tracking.  _return_to_listening() below also clears it, but doing it
-        # here makes the invariant explicit for readers.
-        self._cancel_relisten_timer()
-        self._relisten_count = 0
+    def _finalize_arrival(self) -> None:
+        """Transition FINAL_TURN -> ARRIVED atomically, then run side effects.
 
-        self._set_state(State.ARRIVED)
+        Only transitions if current state is FINAL_TURN.  Any other state
+        (shutdown, error path) is a no-op — the caller must not rely on
+        this being called exactly once from a given state.
+        """
         with self._state_lock:
-            confidence = self._last_detection.confidence if self._last_detection else 0.0
+            if self.state != State.FINAL_TURN:
+                return
+            prev = self.state
+            self._cancel_final_turn_timer_locked()
+            self._final_turn_count = 0
+            self._final_turn_in_flight = False
+            # ARRIVED is end-of-event — also clear any relisten tracking.
+            self._cancel_relisten_timer_locked()
+            self._relisten_count = 0
+            self.state = State.ARRIVED
+
+        logger.info(f"State: {prev.value} -> {State.ARRIVED.value}")
+        self._do_arrived_side_effects()
+
+    def _do_arrived_side_effects(self) -> None:
+        """Send caregiver alert, wait ARRIVED_DURATION, return to LISTENING.
+
+        Called by _finalize_arrival after the state transition.  Reads
+        the last detection's confidence, fires the app alert, then blocks
+        on self._shutdown for ARRIVED_DURATION before resetting.
+        """
+        with self._state_lock:
+            confidence = (
+                self._last_detection.confidence if self._last_detection else 0.0
+            )
 
         logger.info("Robot arrived at baby - sending alert")
         if self.app:
@@ -554,6 +868,7 @@ class Orchestrator:
         logger.info("Shutting down orchestrator...")
         self._shutdown.set()
         self._cancel_relisten_timer()
+        self._cancel_final_turn_timer()
         if self.app:
             self.app.stop()
         self.bcd.stop()
@@ -564,36 +879,47 @@ class Orchestrator:
             time.sleep(3)
             logging.shutdown()
             os._exit(0)
+
         threading.Thread(target=_force_exit, daemon=True).start()
 
 
 def main():
     parser = argparse.ArgumentParser(
-        description='Baby Monitor Robot - Pi Integration Orchestrator'
+        description="Baby Monitor Robot - Pi Integration Orchestrator"
     )
     parser.add_argument(
-        '--device-index', type=int, default=None,
-        help='PyAudio device index for microphone array',
+        "--device-index",
+        type=int,
+        default=None,
+        help="PyAudio device index for microphone array",
     )
     parser.add_argument(
-        '--device-name', type=str, default=None,
+        "--device-name",
+        type=str,
+        default=None,
         help="Find device by name substring (e.g., 'TI USB Audio')",
     )
     parser.add_argument(
-        '--no-app', action='store_true',
-        help='Disable mobile app (Flask server, mDNS, camera)',
+        "--no-app",
+        action="store_true",
+        help="Disable mobile app (Flask server, mDNS, camera)",
     )
     parser.add_argument(
-        '--debug', action='store_true',
-        help='Enable DEBUG-level logging',
+        "--debug",
+        action="store_true",
+        help="Enable DEBUG-level logging",
     )
     parser.add_argument(
-        '--quiet', '-q', action='store_true',
-        help='Mute BCD processing steps, debug output, and root logger INFO messages',
+        "--quiet",
+        "-q",
+        action="store_true",
+        help="Mute BCD processing steps, debug output, and root logger INFO messages",
     )
     parser.add_argument(
-        '--single-model', type=str, default=None,
-        help='Use a single SL model for all angles (e.g. New_Test_Model.h5)',
+        "--single-model",
+        type=str,
+        default=None,
+        help="Use a single SL model for all angles (e.g. New_Test_Model.h5)",
     )
 
     args = parser.parse_args()
@@ -601,35 +927,41 @@ def main():
     # --- Logging ---
     logging.basicConfig(
         level=logging.DEBUG if args.debug else logging.INFO,
-        format='%(asctime)s [%(levelname)s] %(name)s: %(message)s',
+        format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
     )
-    logging.getLogger('werkzeug').setLevel(logging.WARNING)
+    logging.getLogger("werkzeug").setLevel(logging.WARNING)
 
     if args.quiet:
         logging.getLogger().setLevel(logging.WARNING)
         for name in (
-            '__main__',
-            'FunctionCalls_BCD',
-            'FunctionCalls_SL',
-            'FunctionCalls_OA',
-            'FunctionCalls_App',
+            "__main__",
+            "FunctionCalls_BCD",
+            "FunctionCalls_SL",
+            "FunctionCalls_OA",
+            "FunctionCalls_App",
         ):
             logging.getLogger(name).setLevel(logging.INFO)
 
     # --- Device lookup ---
     if args.device_name:
         from record_samtry import find_device_by_name
+
         args.device_index = find_device_by_name(args.device_name)
 
     # --- Suppress ALSA/JACK warnings ---
     os.environ["JACK_NO_START_SERVER"] = "1"
     global _alsa_error_handler
     import ctypes
+
     try:
-        asound = ctypes.cdll.LoadLibrary('libasound.so.2')
+        asound = ctypes.cdll.LoadLibrary("libasound.so.2")
         _alsa_error_handler = ctypes.CFUNCTYPE(
-            None, ctypes.c_char_p, ctypes.c_int,
-            ctypes.c_char_p, ctypes.c_int, ctypes.c_char_p
+            None,
+            ctypes.c_char_p,
+            ctypes.c_int,
+            ctypes.c_char_p,
+            ctypes.c_int,
+            ctypes.c_char_p,
         )(lambda *_: None)
         asound.snd_lib_error_set_handler(_alsa_error_handler)
     except OSError:
@@ -640,5 +972,5 @@ def main():
     orchestrator.run()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
