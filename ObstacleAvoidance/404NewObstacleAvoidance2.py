@@ -324,10 +324,23 @@ AVOID_SIDE = "AVOID_SIDE"
 WAITING = "WAITING"
 
 CLEAR_TIMEOUT_MS = 30000  # max time to drive past obstacle after turning back (ms)
+CORNER_CLEAR_DRIVE_MS = 500  # drive forward this long after the AVOID_SIDE 90° turn
+# so the robot clears a corner/L-shape before the first front-ultrasonic check
+# (otherwise AVOID_SIDE's immediate f<SAFE_FRONT reading can mistake a corner
+# for a dead end and fire an unnecessary 180° turn).
+DEAD_END_CONFIRMS_REQUIRED = (
+    3  # consecutive confirm_obstacle_front() hits in AVOID_SIDE
+)
+# before declaring a dead end.  Each confirm_obstacle_front() already does three
+# readings of its own, so this is a second-stage filter against transient sensor
+# noise + short obstructions that would otherwise fire a spurious 180° turn.
 
 avoid_state = GO_STRAIGHT
 avoid_dir = None
 waiting_start = 0
+dead_end_confirms = (
+    0  # counter: consecutive confirmed front-blocked readings in AVOID_SIDE
+)
 WAITING_TIMEOUT_MS = 60000  # 60s — if Pi doesn't send new NAV, return to idle
 
 # =============================================================================
@@ -526,7 +539,13 @@ while True:
                 print("Turning RIGHT to go around")
                 turn_by_angle(90)
             reset_heading()
+            # Drive forward briefly so we clear the corner before AVOID_SIDE's
+            # first front-ultrasonic check — prevents L-shaped obstacles from
+            # being mis-detected as dead ends.
+            drive_ms(CORNER_CLEAR_DRIVE_MS)
+            stop()
             avoid_state = AVOID_SIDE
+            dead_end_confirms = 0  # reset dead-end counter on fresh AVOID_SIDE entry
             uart.write("OBSTACLE\n")
             print(
                 f"Following obstacle — watching "
@@ -556,7 +575,15 @@ while True:
                     print("Turning RIGHT to go around")
                     turn_by_angle(90)
                 reset_heading()
+                # Drive forward briefly so we clear the corner before
+                # AVOID_SIDE's first front-ultrasonic check (see comment in
+                # the obstacle_hit branch above).
+                drive_ms(CORNER_CLEAR_DRIVE_MS)
+                stop()
                 avoid_state = AVOID_SIDE
+                dead_end_confirms = (
+                    0  # reset dead-end counter on fresh AVOID_SIDE entry
+                )
                 print(
                     f"Following obstacle — watching "
                     f"{'RIGHT' if avoid_dir == 'LEFT' else 'LEFT'} sensor..."
@@ -573,22 +600,33 @@ while True:
 
         if f < SAFE_FRONT:
             if confirm_obstacle_front():
-                stop()
-                print("Dead end — turning 180° and relistening")
-                if avoid_dir == "LEFT":
-                    turn_by_angle(-180)
-                else:
-                    turn_by_angle(180)
-                reset_heading()
-                stop()
-                nav_active = False
-                avoid_state = WAITING
-                waiting_start = ticks_us()
-                avoid_dir = None
-                uart.write(f"RELISTEN heading={world_heading:.1f}\n")
-                print("Sent RELISTEN after dead end")
+                dead_end_confirms += 1
+                print(
+                    f"[AVOID_SIDE] dead-end signal "
+                    f"{dead_end_confirms}/{DEAD_END_CONFIRMS_REQUIRED}"
+                )
+                if dead_end_confirms >= DEAD_END_CONFIRMS_REQUIRED:
+                    stop()
+                    print("Dead end confirmed — turning 180° and relistening")
+                    if avoid_dir == "LEFT":
+                        turn_by_angle(-180)
+                    else:
+                        turn_by_angle(180)
+                    reset_heading()
+                    stop()
+                    nav_active = False
+                    avoid_state = WAITING
+                    waiting_start = ticks_us()
+                    avoid_dir = None
+                    dead_end_confirms = 0
+                    uart.write(f"RELISTEN heading={world_heading:.1f}\n")
+                    print("Sent RELISTEN after dead end")
+            else:
+                # confirm failed — transient noise, reset the counter
+                dead_end_confirms = 0
 
         elif wall_dist > CLEAR_SIDE:
+            dead_end_confirms = 0
             # Obstacle end detected — go around the corner
             stop()
             print(
@@ -643,5 +681,8 @@ while True:
             print("Obstacle cleared — sent RELISTEN")
 
         else:
+            # Driving alongside the obstacle with clear front — reset the
+            # dead-end counter so transient signals don't accumulate.
+            dead_end_confirms = 0
             update_heading_and_drive()
             drive_ms(15)

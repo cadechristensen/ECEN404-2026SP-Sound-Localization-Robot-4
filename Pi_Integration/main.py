@@ -79,7 +79,7 @@ class Orchestrator:
     FINAL_TURN_ANGLE_DEADBAND = (
         5.0  # degrees — skip turn if refined angle is within this
     )
-    FINAL_TURN_MAX_WORLD_DEVIATION = 45.0  # degrees — reject FINAL_TURN refinements that deviate more than this in world frame
+    FINAL_TURN_MAX_WORLD_DEVIATION = 90.0  # degrees — reject FINAL_TURN refinements that deviate more than this in world frame
 
     def __init__(self, args):
         self.state = State.LISTENING
