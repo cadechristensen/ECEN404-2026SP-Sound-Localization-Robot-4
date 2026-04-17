@@ -37,6 +37,8 @@ Thumbs.db
 *.pth
 *.pt
 *.onnx
+*.joblib
+*.h5
 
 # Jupyter
 .ipynb_checkpoints/
